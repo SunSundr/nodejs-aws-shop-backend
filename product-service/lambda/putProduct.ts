@@ -1,11 +1,13 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { products } from './@mockData';
+import { getHeaders } from './@headers';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   if (!event.body) {
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders([CorsHttpMethod.PUT]),
       body: JSON.stringify({ message: 'Invalid request: body is required' }),
     };
   }
@@ -16,7 +18,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   } catch {
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders([CorsHttpMethod.PUT]),
       body: JSON.stringify({ message: 'Invalid JSON format' }),
     };
   }
@@ -25,7 +27,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   if (!id) {
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders([CorsHttpMethod.PUT]),
       body: JSON.stringify({ message: 'Product ID is required' }),
     };
   }
@@ -34,14 +36,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   if (!product) {
     return {
       statusCode: 404,
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders([CorsHttpMethod.PUT]),
       body: JSON.stringify({ message: 'Product not found' }),
     };
   }
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders([CorsHttpMethod.PUT]),
     body: JSON.stringify({ message: 'Product updated successfully', product }),
   };
 };

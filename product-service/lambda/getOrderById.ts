@@ -1,5 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { orders } from './@mockData';
+import { getHeaders } from './@headers';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const id = event.pathParameters?.id;
@@ -7,12 +9,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   return order
     ? {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(['GET']),
         body: JSON.stringify(order),
       }
     : {
         statusCode: 404,
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(['GET']),
         body: JSON.stringify({ message: 'Order not found' }),
       };
 };
