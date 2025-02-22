@@ -1,0 +1,185 @@
+openapi: 3.0.1
+info:
+  title: "Product Service API"
+  description: "API for managing products in the store"
+  version: "1.0.0"
+servers:
+  - url: "https://1gegmvjyg6.execute-api.eu-north-1.amazonaws.com/dev/"
+    description: "Production server"
+  - url: "http://localhost:3000"
+    description: "Local development server 1"  
+  - url: "http://localhost:5173"
+    description: "Local development server 2"
+  - url: "http://localhost:4173"
+    description: "Local development server 3"
+paths:
+  /products:
+    get:
+      summary: "Get all products"
+      description: "Returns a list of all available products"
+      operationId: "getProductsList"
+      tags:
+        - "Products"
+      responses:
+        "200":
+          description: "Successful operation"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      summary: "Update product"
+      description: "Updates an existing product"
+      operationId: "updateProduct"
+      tags:
+        - "Products"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+      responses:
+        "200":
+          description: "Product updated successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: "Invalid request: body is required or Invalid JSON format"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Product not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /products/{id}:
+    get:
+      summary: "Get product by ID"
+      description: "Returns a single product by its ID"
+      operationId: "getProductById"
+      tags:
+        - "Products"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+          example: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+      responses:
+        "200":
+          description: "Successful operation"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: "Bad Request - Invalid ID supplied"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Product not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      summary: "Delete product by ID"
+      description: "Deletes a single product by its ID"
+      operationId: "deleteProductById"
+      tags:
+        - "Products"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+          example: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+      responses:
+        "200":
+          description: "Product deleted successfully"
+        "403":
+          description: "ID must be provided"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Product not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+        title:
+          type: string
+          example: "Super Product"
+        description:
+          type: string
+          example: "Experience the ultimate power in a tiny package"
+        price:
+          type: number
+          format: float
+          example: 549.99
+      required:
+        - id
+        - title
+        - price
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "An unexpected error occurred"
+      required:
+        - message
+
+tags:
+  - name: "Products"
+    description: "Operations about products"
