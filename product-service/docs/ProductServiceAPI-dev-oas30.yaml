@@ -11,7 +11,9 @@ servers:
   - url: "http://localhost:5173"
     description: "Local development server 2"
   - url: "http://localhost:4173"
-    description: "Local development server 3"
+    description: "Local development server 3
+  - url: "http://localhost:5500"
+    description: "Local development server 4"
 paths:
   /products:
     get:
@@ -36,7 +38,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
     put:
-      summary: "Update product"
+      summary: "Update (Add) product"
       description: "Updates an existing product"
       operationId: "updateProduct"
       tags:
@@ -86,7 +88,7 @@ paths:
           required: true
           schema:
             type: "string"
-          example: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+          example: "7567ec4b-b10c-48c5-9345-fc73c48a80aa"
       responses:
         "200":
           description: "Successful operation"
@@ -124,7 +126,7 @@ paths:
           required: true
           schema:
             type: "string"
-          example: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+          example: "7567ec4b-b10c-48c5-9345-fc73c48a80aa"
       responses:
         "200":
           description: "Product deleted successfully"
@@ -155,7 +157,7 @@ components:
         id:
           type: string
           format: uuid
-          example: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+          example: "7567ec4b-b10c-48c5-9345-fc73c48a80aa"
         title:
           type: string
           example: "Super Product"
