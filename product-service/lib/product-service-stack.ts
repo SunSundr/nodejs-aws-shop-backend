@@ -9,6 +9,7 @@ export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
     const stage = process.env.STAGE || 'dev';
+    const httpMethod = cdk.aws_apigatewayv2.HttpMethod;
 
     // API Gateway
     const api = new RestApi(this, 'ProductServiceAPI', {
@@ -109,27 +110,27 @@ export class ProductServiceStack extends cdk.Stack {
     const products = api.root.addResource('products');
     const product_id = products.addResource('{id}');
 
-    products.addMethod('GET', new LambdaIntegration(productsLambda));
-    product_id.addMethod('GET', new LambdaIntegration(productLambda));
-    products.addMethod('PUT', new LambdaIntegration(putProductLambdaHandler));
-    product_id.addMethod('DELETE', new LambdaIntegration(deleteProductByIdLambdaHandler));
+    products.addMethod(httpMethod.GET, new LambdaIntegration(productsLambda));
+    product_id.addMethod(httpMethod.GET, new LambdaIntegration(productLambda));
+    products.addMethod(httpMethod.PUT, new LambdaIntegration(putProductLambdaHandler));
+    product_id.addMethod(httpMethod.DELETE, new LambdaIntegration(deleteProductByIdLambdaHandler));
 
     // API Gateway endpoints (profile)
     const profile = api.root.addResource('profile');
     const profile_cart = profile.addResource('cart');
 
-    profile_cart.addMethod('GET', new LambdaIntegration(getProfileCartLambdaHandler));
-    profile_cart.addMethod('PUT', new LambdaIntegration(putProfileCartLambdaHandler));
+    profile_cart.addMethod(httpMethod.GET, new LambdaIntegration(getProfileCartLambdaHandler));
+    profile_cart.addMethod(httpMethod.PUT, new LambdaIntegration(putProfileCartLambdaHandler));
 
     // API Gateway endpoints (order)
     const orders = api.root.addResource('order');
     const order_id = orders.addResource('{id}');
     const order_id_status = order_id.addResource('status');
 
-    orders.addMethod('GET', new LambdaIntegration(getOrdersLambdaHandler));
-    orders.addMethod('PUT', new LambdaIntegration(putOrderLambdaHandler));
-    order_id.addMethod('GET', new LambdaIntegration(getOrderByIdLambdaHandler));
-    order_id.addMethod('DELETE', new LambdaIntegration(deleteOrderLambdaHandler));
-    order_id_status.addMethod('PUT', new LambdaIntegration(putOrderStatusLambdaHandler));
+    orders.addMethod(httpMethod.GET, new LambdaIntegration(getOrdersLambdaHandler));
+    orders.addMethod(httpMethod.PUT, new LambdaIntegration(putOrderLambdaHandler));
+    order_id.addMethod(httpMethod.GET, new LambdaIntegration(getOrderByIdLambdaHandler));
+    order_id.addMethod(httpMethod.DELETE, new LambdaIntegration(deleteOrderLambdaHandler));
+    order_id_status.addMethod(httpMethod.PUT, new LambdaIntegration(putOrderStatusLambdaHandler));
   }
 }

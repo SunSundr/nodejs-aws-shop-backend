@@ -4,8 +4,17 @@ import { products } from './@mockData';
 import { getHeaders } from './@headers';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  const id = event.pathParameters?.id;
-  const product = products.find((item) => item.id === id);
+  const productId = event.pathParameters?.id;
+
+  if (!productId) {
+    return {
+      statusCode: 403,
+      headers: getHeaders([CorsHttpMethod.DELETE]),
+      body: JSON.stringify({ message: 'ID must be provided' }),
+    };
+  }
+
+  const product = products.find((item) => item.id === productId);
 
   if (!product) {
     return {

@@ -3,6 +3,8 @@ module.exports = {
   roots: ['<rootDir>/test'],
   testMatch: ['**/*.test.ts'],
   transform: {
-    '^.+\\.tsx?$': 'ts-jest'
-  }
+    '^.+\\.tsx?$': 'ts-jest',
+  },
+  coveragePathIgnorePatterns: ['@.*\\.ts'],
+  testTimeout: 15000,
 };

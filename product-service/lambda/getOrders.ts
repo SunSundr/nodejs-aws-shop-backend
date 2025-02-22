@@ -3,6 +3,7 @@ import { CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { orders } from './@mockData';
 import { getHeaders } from './@headers';
 
+// Temporary Stub Function
 export const handler = async (_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   return {
     statusCode: 200,
