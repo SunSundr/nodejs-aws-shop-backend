@@ -8,12 +8,15 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "cdk": "cdk",
     "cdk:bootstrap": "cdk bootstrap",
     "cdk:deploy": "npm run build && cdk deploy",
     "cdk:destroy": "cdk destroy",
     "cdk:diff": "npm run build && cdk diff",
-    "cdk:synth": "npm run build && cdk synth"
+    "cdk:synth": "npm run build && cdk synth",
+    "lint": "eslint . --fix",
+    "prettier": "prettier lambda lib test --write"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.147",
