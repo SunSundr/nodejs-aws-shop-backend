@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1740235311022" clover="3.2.0">
-  <project timestamp="1740235311023" name="All files">
+<coverage generated="1740236996602" clover="3.2.0">
+  <project timestamp="1740236996602" name="All files">
     <metrics statements="78" coveredstatements="78" conditionals="10" coveredconditionals="10" methods="15" coveredmethods="15" elements="103" coveredelements="103" complexity="0" loc="78" ncloc="78" packages="1" files="11" classes="11"/>
     <file name="deleteOrder.ts" path="D:\RollingScopes\AWS-CloudDev\nodejs-aws-shop-backend\product-service\lambda\deleteOrder.ts">
       <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
@@ -18,10 +18,10 @@
       <line num="7" count="3" type="stmt"/>
       <line num="9" count="3" type="cond" truecount="1" falsecount="0"/>
       <line num="10" count="1" type="stmt"/>
-      <line num="17" count="7" type="stmt"/>
-      <line num="19" count="2" type="cond" truecount="1" falsecount="0"/>
-      <line num="20" count="1" type="stmt"/>
-      <line num="27" count="1" type="stmt"/>
+      <line num="13" count="7" type="stmt"/>
+      <line num="15" count="2" type="cond" truecount="1" falsecount="0"/>
+      <line num="16" count="1" type="stmt"/>
+      <line num="19" count="1" type="stmt"/>
     </file>
     <file name="getOrderById.ts" path="D:\RollingScopes\AWS-CloudDev\nodejs-aws-shop-backend\product-service\lambda\getOrderById.ts">
       <metrics statements="7" coveredstatements="7" conditionals="2" coveredconditionals="2" methods="2" coveredmethods="2"/>
@@ -31,7 +31,7 @@
       <line num="7" count="1" type="stmt"/>
       <line num="8" count="2" type="stmt"/>
       <line num="9" count="3" type="stmt"/>
-      <line num="10" count="2" type="cond" truecount="2" falsecount="0"/>
+      <line num="11" count="2" type="cond" truecount="2" falsecount="0"/>
     </file>
     <file name="getOrders.ts" path="D:\RollingScopes\AWS-CloudDev\nodejs-aws-shop-backend\product-service\lambda\getOrders.ts">
       <metrics statements="5" coveredstatements="5" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
@@ -50,10 +50,10 @@
       <line num="7" count="3" type="stmt"/>
       <line num="9" count="3" type="cond" truecount="1" falsecount="0"/>
       <line num="10" count="1" type="stmt"/>
-      <line num="17" count="7" type="stmt"/>
-      <line num="19" count="2" type="cond" truecount="1" falsecount="0"/>
-      <line num="20" count="1" type="stmt"/>
-      <line num="27" count="1" type="stmt"/>
+      <line num="13" count="7" type="stmt"/>
+      <line num="15" count="2" type="cond" truecount="1" falsecount="0"/>
+      <line num="16" count="1" type="stmt"/>
+      <line num="19" count="1" type="stmt"/>
     </file>
     <file name="getProductList.ts" path="D:\RollingScopes\AWS-CloudDev\nodejs-aws-shop-backend\product-service\lambda\getProductList.ts">
       <metrics statements="5" coveredstatements="5" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
@@ -93,16 +93,16 @@
       <line num="6" count="1" type="stmt"/>
       <line num="7" count="5" type="cond" truecount="1" falsecount="0"/>
       <line num="8" count="1" type="stmt"/>
-      <line num="16" count="4" type="stmt"/>
-      <line num="17" count="4" type="stmt"/>
-      <line num="19" count="1" type="stmt"/>
-      <line num="26" count="3" type="stmt"/>
-      <line num="27" count="3" type="cond" truecount="1" falsecount="0"/>
+      <line num="12" count="4" type="stmt"/>
+      <line num="13" count="4" type="stmt"/>
+      <line num="15" count="1" type="stmt"/>
+      <line num="18" count="3" type="stmt"/>
+      <line num="19" count="3" type="cond" truecount="1" falsecount="0"/>
+      <line num="20" count="1" type="stmt"/>
+      <line num="23" count="7" type="stmt"/>
+      <line num="24" count="2" type="cond" truecount="1" falsecount="0"/>
+      <line num="25" count="1" type="stmt"/>
       <line num="28" count="1" type="stmt"/>
-      <line num="35" count="7" type="stmt"/>
-      <line num="36" count="2" type="cond" truecount="1" falsecount="0"/>
-      <line num="37" count="1" type="stmt"/>
-      <line num="44" count="1" type="stmt"/>
     </file>
     <file name="putProfileCart.ts" path="D:\RollingScopes\AWS-CloudDev\nodejs-aws-shop-backend\product-service\lambda\putProfileCart.ts">
       <metrics statements="6" coveredstatements="6" conditionals="1" coveredconditionals="1" methods="1" coveredmethods="1"/>
@@ -111,7 +111,7 @@
       <line num="6" count="1" type="stmt"/>
       <line num="8" count="2" type="cond" truecount="1" falsecount="0"/>
       <line num="9" count="1" type="stmt"/>
-      <line num="15" count="1" type="stmt"/>
+      <line num="11" count="1" type="stmt"/>
     </file>
   </project>
 </coverage>

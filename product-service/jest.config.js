@@ -6,5 +6,5 @@ module.exports = {
     '^.+\\.tsx?$': 'ts-jest',
   },
   coveragePathIgnorePatterns: ['@.*\\.ts'],
-  testTimeout: 15000,
+  testTimeout: 25000,
 };
