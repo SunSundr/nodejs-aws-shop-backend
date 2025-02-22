@@ -4,7 +4,7 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import prettier from 'eslint-plugin-prettier';
 
 export default tseslint.config(
-  { ignores: ['dist', 'cdk.out'] },
+  { ignores: ['dist', 'cdk.out', 'docs'] },
   {
     files: ['**/*.{js,mjs,cjs,ts}'],
     extends: [
