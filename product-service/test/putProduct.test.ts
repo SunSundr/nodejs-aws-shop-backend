@@ -1,8 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { handler } from '../lambda/putProduct';
-import { products } from '../lambda/@mockData';
 import { getHeaders } from '../lambda/@headers';
+import { products } from '../db/data';
 
 jest.mock('../lambda/@headers', () => ({
   getHeaders: jest.fn((methods: CorsHttpMethod[]) => ({

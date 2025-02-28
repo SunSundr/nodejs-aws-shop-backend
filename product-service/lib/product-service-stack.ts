@@ -4,6 +4,7 @@ import { Cors, LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
+import { DynamoDBTables } from '../db/tables';
 
 export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -104,6 +105,13 @@ export class ProductServiceStack extends cdk.Stack {
       runtime: Runtime.NODEJS_22_X,
       functionName: `PutOrderStatus-${stage}`,
       entry: path.join(__dirname, '../lambda/putOrderStatus.ts'),
+    });
+
+    new DynamoDBTables(this, 'ProductServiceDatabase', {
+      lambdas: {
+        getProductByID: productLambda,
+        getProductsList: productsLambda,
+      },
     });
 
     // API Gateway endpoints (products)
