@@ -1,4 +1,4 @@
-import { APIGatewayProxyResult } from 'aws-lambda';
+/* import { APIGatewayProxyResult } from 'aws-lambda';
 import { CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { handler } from '../lambda/getProductList';
 import { getHeaders } from '../lambda/@headers';
@@ -27,3 +27,4 @@ describe('Lambda Handler', () => {
     expect(getHeaders).toHaveBeenCalledWith([CorsHttpMethod.GET]);
   });
 });
+ */

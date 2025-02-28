@@ -1,19 +1,11 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import {
-  DynamoDBDocumentClient,
-  ScanCommand,
-  DeleteCommand,
-  PutCommand,
-} from '@aws-sdk/lib-dynamodb';
-import { products } from './data';
+import { ScanCommand, DeleteCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { dbDocClient } from './client';
 import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../lib/constants';
-
-const client = new DynamoDBClient();
-const dynamoDb = DynamoDBDocumentClient.from(client);
+import { products } from './data';
 
 async function clearTable(tableName: string) {
   const scanCommand = new ScanCommand({ TableName: tableName });
-  const scanResult = await dynamoDb.send(scanCommand);
+  const scanResult = await dbDocClient.send(scanCommand);
 
   if (scanResult.Items) {
     for (const item of scanResult.Items) {
@@ -24,7 +16,7 @@ async function clearTable(tableName: string) {
             ? { id: item.id, title: item.title }
             : { product_id: item.product_id },
       });
-      await dynamoDb.send(deleteCommand);
+      await dbDocClient.send(deleteCommand);
     }
   }
   console.log(`Table ${tableName} cleared.`);
@@ -38,7 +30,7 @@ async function populateProductsTable() {
         ...product,
       },
     });
-    await dynamoDb.send(putCommand);
+    await dbDocClient.send(putCommand);
   }
   console.log('Products table populated.');
 }
@@ -52,7 +44,7 @@ async function populateStocksTable() {
         count: product.count,
       },
     });
-    await dynamoDb.send(putCommand);
+    await dbDocClient.send(putCommand);
   }
   console.log('Stocks table populated.');
 }
