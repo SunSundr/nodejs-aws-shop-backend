@@ -8,6 +8,9 @@ export interface ProductServiceDatabaseProps {
   lambdas: {
     getProductsList: NodejsFunction;
     getProductByID: NodejsFunction;
+    postProduct: NodejsFunction;
+    deleteProductByID: NodejsFunction;
+    putProduct: NodejsFunction;
   };
 }
 
@@ -17,7 +20,8 @@ export class DynamoDBTables extends Construct {
 
   constructor(scope: Construct, id: string, props: ProductServiceDatabaseProps) {
     super(scope, id);
-    const { getProductsList, getProductByID } = props.lambdas;
+    const { getProductsList, getProductByID, postProduct, deleteProductByID, putProduct } =
+      props.lambdas;
 
     // Products table:
     this.productsTable = new dynamodb.TableV2(this, 'ProductsTable', {
@@ -32,6 +36,9 @@ export class DynamoDBTables extends Construct {
 
     this.productsTable.grantReadData(getProductByID);
     this.productsTable.grantReadData(getProductsList);
+    this.productsTable.grantWriteData(postProduct);
+    this.productsTable.grantReadWriteData(deleteProductByID);
+    this.productsTable.grantWriteData(putProduct);
 
     // Stocks table:
     this.stocksTable = new dynamodb.TableV2(this, 'StocksTable', {
@@ -50,5 +57,8 @@ export class DynamoDBTables extends Construct {
 
     this.stocksTable.grantReadData(getProductByID);
     this.stocksTable.grantReadData(getProductsList);
+    this.stocksTable.grantWriteData(postProduct);
+    this.stocksTable.grantReadWriteData(deleteProductByID);
+    this.stocksTable.grantWriteData(putProduct);
   }
 }

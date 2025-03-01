@@ -33,6 +33,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     return proxyResult(200, CorsHttpMethod.GET, productsWithCount);
   } catch (error) {
     console.error('Error fetching products:', error);
-    return errorResult(error);
+    return errorResult(error, CorsHttpMethod.GET);
   }
 };
