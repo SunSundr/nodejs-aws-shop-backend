@@ -6,8 +6,7 @@ import { errorResult } from './@errorResult';
 import { formatLog } from './@formatLogs';
 import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../lib/constants';
 import { dbDocClient } from '../db/client';
-
-const FORBIDDEN_IDS = ['protected-id-1', 'protected-id-2'];
+import { isReservedId } from '../db/utils';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log(formatLog(event.httpMethod, event.path, event));
@@ -18,7 +17,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     return proxyResult(400, CorsHttpMethod.DELETE, { message: 'Product ID must be provided' });
   }
 
-  if (FORBIDDEN_IDS.includes(productId)) {
+  if (isReservedId(productId)) {
     return proxyResult(403, CorsHttpMethod.DELETE, {
       message: 'Deletion of this product is forbidden',
     });

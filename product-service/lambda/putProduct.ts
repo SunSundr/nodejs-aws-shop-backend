@@ -6,6 +6,7 @@ import { errorResult } from './@errorResult';
 import { formatLog } from './@formatLogs';
 import { dbDocClient } from '../db/client';
 import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../lib/constants';
+import { isReservedId } from '../db/utils';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log(formatLog(event.httpMethod, event.path, event));
@@ -23,6 +24,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     if (!id || !title) {
       return proxyResult(400, CorsHttpMethod.PUT, { message: 'Invalid input data' });
+    }
+
+    if (isReservedId(id)) {
+      return proxyResult(403, CorsHttpMethod.DELETE, {
+        message: 'Modification of this product is forbidden',
+      });
     }
 
     const transactionCommand = new TransactWriteItemsCommand({
