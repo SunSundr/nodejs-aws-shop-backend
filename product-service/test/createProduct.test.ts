@@ -21,6 +21,7 @@ describe('Lambda Handler', () => {
     description: 'Test Description',
     price: 100,
     count: 10,
+    imageURL: 'https://image.url',
   });
 
   beforeEach(() => {
@@ -75,6 +76,23 @@ describe('Lambda Handler', () => {
     expect(JSON.parse(result.body).message).toBe('Price and count must be non-negative');
   });
 
+  it('should return 400 if imageURL format is invalid', async () => {
+    const event = getEvent(
+      JSON.stringify({
+        title: 'Test Product',
+        description: 'Test Description',
+        price: 100,
+        count: 10,
+        imageURL: true,
+      }),
+    );
+
+    const result = await handler(event);
+
+    expect(result.statusCode).toBe(400);
+    expect(JSON.parse(result.body).message).toBe('Invalid imageURL format');
+  });
+
   it('should return 201 if product is successfully created', async () => {
     const event = getEvent(testBody);
     ddbMock.resolvesOnce({});
@@ -88,6 +106,29 @@ describe('Lambda Handler', () => {
     expect(responseBody.description).toBe('Test Description');
     expect(responseBody.price).toBe(100);
     expect(responseBody.count).toBe(10);
+    expect(responseBody.imageURL).toBe('https://image.url');
+  });
+
+  it('should return 201 if product is successfully created without imageURL', async () => {
+    const bodyWithoutImage = JSON.stringify({
+      title: 'Test Product',
+      description: 'Test Description',
+      price: 100,
+      count: 10,
+    });
+    const event = getEvent(bodyWithoutImage);
+    ddbMock.resolvesOnce({});
+
+    const result = await handler(event);
+
+    expect(result.statusCode).toBe(201);
+    const responseBody = JSON.parse(result.body);
+    expect(responseBody.id).toBeDefined();
+    expect(responseBody.title).toBe('Test Product');
+    expect(responseBody.description).toBe('Test Description');
+    expect(responseBody.price).toBe(100);
+    expect(responseBody.count).toBe(10);
+    expect(responseBody.imageURL).toBeUndefined();
   });
 
   it('should return 400 if transaction fails', async () => {

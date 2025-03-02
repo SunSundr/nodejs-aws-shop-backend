@@ -41,8 +41,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return proxyResult(404, HttpMethod.GET, { message: 'Product not found' });
     }
 
-    const stock = stockResult.Item as Stock | undefined;
-    const count = stock?.count ?? 0;
+    const stock: Stock = stockResult.Item as Stock;
+    const count = stock.count;
 
     const productWithCount = {
       ...products[0],

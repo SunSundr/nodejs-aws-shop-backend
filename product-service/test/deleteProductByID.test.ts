@@ -83,11 +83,6 @@ describe('Lambda Handler', () => {
     ddbMock.resolvesOnce({
       Items: [{ id: { S: id }, title: { S: 'Test Product' } }],
     });
-
-    ddbMock.resolvesOnce({
-      Items: [{ id: { S: id }, title: { S: 'Test Product' } }],
-    });
-
     const error = new Error('Transaction Canceled');
     error.name = 'TransactionCanceledException';
     ddbMock.rejectsOnce(error);

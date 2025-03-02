@@ -40,7 +40,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     const product = products[0];
-    const title = product.title?.S ?? '';
+    const title = product.title.S!;
 
     const transactionCommand = new TransactWriteItemsCommand({
       TransactItems: [

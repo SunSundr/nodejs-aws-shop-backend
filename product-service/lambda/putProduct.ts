@@ -44,6 +44,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       });
     }
 
+    const imageURL = body.imageURL;
+
+    if (imageURL !== undefined && typeof imageURL !== 'string') {
+      return proxyResult(400, HttpMethod.POST, { message: 'Invalid imageURL format' });
+    }
+
     const transactionCommand = new TransactWriteItemsCommand({
       TransactItems: [
         {
@@ -51,12 +57,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             TableName: PRODUCTS_TABLE_NAME,
             Key: {
               id: { S: id },
-              title: { S: title.toString() },
+              title: { S: title },
             },
-            UpdateExpression: 'SET description = :description, price = :price',
+            UpdateExpression:
+              imageURL === ''
+                ? 'REMOVE imageURL SET description = :description, price = :price'
+                : imageURL !== undefined
+                  ? 'SET description = :description, price = :price, imageURL = :imageURL'
+                  : 'SET description = :description, price = :price',
             ExpressionAttributeValues: {
               ':description': { S: description },
               ':price': { N: price.toString() },
+              ...(imageURL !== '' && imageURL !== undefined && { ':imageURL': { S: imageURL } }),
             },
             ConditionExpression: 'attribute_exists(id) AND attribute_exists(title)',
           },
@@ -82,7 +94,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     await dbDocClient.send(transactionCommand);
 
-    return proxyResult(200, HttpMethod.PUT, null);
+    //return proxyResult(200, HttpMethod.PUT, null);
+    return proxyResult(200, HttpMethod.POST, {
+      id,
+      title,
+      description,
+      price,
+      count,
+      ...(imageURL && { imageURL }),
+    });
   } catch (error) {
     console.error('Error updating product:', error);
 

@@ -1,5 +1,5 @@
 import { APIGatewayProxyResult, APIGatewayProxyEvent } from 'aws-lambda';
-import { TransactWriteItemsCommand, Put } from '@aws-sdk/client-dynamodb';
+import { TransactWriteItemsCommand } from '@aws-sdk/client-dynamodb';
 import { randomUUID } from 'crypto';
 import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../lib/constants';
 import { proxyResult } from './@proxyResult';
@@ -35,11 +35,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return proxyResult(400, HttpMethod.POST, { message: 'Price and count must be non-negative' });
     }
 
-    const productId = randomUUID();
+    const imageURL = body.imageURL;
 
-    const imageURL = body.imageURL
-      ? { imageURL: { S: body.imageURL.toString() } }
-      : ({} as Put['Item']);
+    if (imageURL !== undefined && typeof imageURL !== 'string') {
+      return proxyResult(400, HttpMethod.POST, { message: 'Invalid imageURL format' });
+    }
+
+    const productId = randomUUID();
 
     const transactionCommand = new TransactWriteItemsCommand({
       TransactItems: [
@@ -51,7 +53,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
               title: { S: title },
               description: { S: description },
               price: { N: price.toString() },
-              ...imageURL,
+              ...(imageURL && { imageURL: { S: imageURL } }),
             },
           },
         },
@@ -75,6 +77,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       description,
       price,
       count,
+      ...(imageURL && { imageURL }),
     });
   } catch (error) {
     console.error('Error creating product:', error);

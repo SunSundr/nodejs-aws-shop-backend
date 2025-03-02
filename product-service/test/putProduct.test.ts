@@ -44,13 +44,60 @@ describe('Lambda Handler', () => {
   });
 
   it('should return 200 if product is successfully updated', async () => {
-    const event = getEvent(testBody);
+    const product = {
+      id: crypto.randomUUID(),
+      title: 'Test Product',
+      description: 'Test Description',
+      price: 100,
+      count: 10,
+    };
+    const event = getEvent(JSON.stringify(product));
     ddbMock.resolvesOnce({});
 
     const result = await handler(event);
 
     expect(result.statusCode).toBe(200);
-    expect(JSON.parse(result.body)).toBeNull();
+    const responseBody = JSON.parse(result.body);
+    expect(responseBody).toMatchObject(product);
+  });
+
+  it('should remove imageURL when empty string is provided', async () => {
+    const event = getEvent(
+      JSON.stringify({
+        id: crypto.randomUUID(),
+        title: 'Test Product',
+        description: 'Test Description',
+        price: 100,
+        count: 10,
+        imageURL: '',
+      }),
+    );
+    ddbMock.resolvesOnce({});
+
+    const result = await handler(event);
+
+    expect(result.statusCode).toBe(200);
+    const responseBody = JSON.parse(result.body);
+    expect(responseBody.imageURL).toBeUndefined();
+  });
+
+  it('should update imageURL when non-empty string is provided', async () => {
+    const imageURL = 'https://example.com/image.jpg';
+    const event = getEvent(
+      JSON.stringify({
+        id: 'test-id',
+        title: 'Test Product',
+        description: 'Test Description',
+        price: 100,
+        count: 10,
+        imageURL,
+      }),
+    );
+
+    const result = await handler(event);
+    expect(result.statusCode).toBe(200);
+    const responseBody = JSON.parse(result.body);
+    expect(responseBody.imageURL).toBe(imageURL);
   });
 
   it('should return 400 if body is missing', async () => {
@@ -70,6 +117,24 @@ describe('Lambda Handler', () => {
 
     expect(result.statusCode).toBe(400);
     expect(JSON.parse(result.body).message).toBe('Invalid input data');
+  });
+
+  it('should return 400 if imageURL format is invalid', async () => {
+    const event = getEvent(
+      JSON.stringify({
+        id: crypto.randomUUID(),
+        title: 'Test Product',
+        description: 'Test Description',
+        price: 100,
+        count: 10,
+        imageURL: true,
+      }),
+    );
+
+    const result = await handler(event);
+
+    expect(result.statusCode).toBe(400);
+    expect(JSON.parse(result.body).message).toBe('Invalid imageURL format');
   });
 
   it('should return 403 if `id` is reserved', async () => {
