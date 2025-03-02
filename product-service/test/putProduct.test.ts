@@ -1,74 +1,192 @@
-/* import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { handler } from '../lambda/putProduct';
-import { getHeaders } from '../lambda/@headers';
-import { products } from '../db/data';
+import { APIGatewayProxyEvent } from 'aws-lambda';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+// import { TransactWriteItemsCommand } from '@aws-sdk/client-dynamodb';
+import { getReservedId } from '../db/utils';
 
-jest.mock('../lambda/@headers', () => ({
-  getHeaders: jest.fn((methods: CorsHttpMethod[]) => ({
-    'Access-Control-Allow-Methods': methods.join(','),
-    'Access-Control-Allow-Origin': CorsHttpMethod.ANY,
+jest.mock('@aws-sdk/lib-dynamodb', () => ({
+  DynamoDBDocumentClient: {
+    from: jest.fn(() => ({
+      send: jest.fn(),
+    })),
+  },
+}));
+
+jest.mock('@aws-sdk/client-dynamodb', () => ({
+  DynamoDBClient: jest.fn(() => ({
+    send: jest.fn(),
+  })),
+  TransactWriteItemsCommand: jest.fn().mockImplementation((params) => ({
+    ...params,
+    CommandName: 'TransactWriteItemsCommand',
   })),
 }));
 
-const defaultHeaders = {
-  'Access-Control-Allow-Methods': CorsHttpMethod.PUT,
-  'Access-Control-Allow-Origin': CorsHttpMethod.ANY,
-};
-
 describe('Lambda Handler', () => {
+  let sendMock: jest.Mock;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    sendMock = jest.fn();
+    (DynamoDBDocumentClient.from as jest.Mock).mockImplementation(() => ({
+      send: sendMock,
+    }));
   });
 
-  const getEvent = (body: unknown): APIGatewayProxyEvent =>
-    ({ body }) as unknown as APIGatewayProxyEvent;
+  it('should return 400 if body is missing', async () => {
+    const event = {
+      httpMethod: 'PUT',
+      path: '/products',
+      body: null,
+    } as unknown as APIGatewayProxyEvent;
 
-  it('should return 400 status code if body is missing', async () => {
-    const event = getEvent(null);
     const result = await handler(event);
+
     expect(result.statusCode).toBe(400);
-    expect(result.body).toBe(JSON.stringify({ message: 'Invalid request: body is required' }));
-    expect(result.headers).toEqual(defaultHeaders);
-    expect(getHeaders).toHaveBeenCalledWith([CorsHttpMethod.PUT]);
+    expect(JSON.parse(result.body).message).toBe('Invalid request: body is required');
   });
 
-  it('should return 400 status code if JSON is invalid', async () => {
-    const event = getEvent('invalid-json');
+  it('should return 400 if id or title is missing', async () => {
+    const event = {
+      httpMethod: 'PUT',
+      path: '/products',
+      body: JSON.stringify({ description: 'Test Description', price: 100, count: 10 }),
+    } as unknown as APIGatewayProxyEvent;
     const result = await handler(event);
+
     expect(result.statusCode).toBe(400);
-    expect(result.body).toBe(JSON.stringify({ message: 'Invalid JSON format' }));
-    expect(result.headers).toEqual(defaultHeaders);
-    expect(getHeaders).toHaveBeenCalledWith([CorsHttpMethod.PUT]);
+    expect(JSON.parse(result.body).message).toBe('Invalid input data');
   });
 
-  it('should return 400 status code if product ID is missing', async () => {
-    const event = getEvent(JSON.stringify({ name: 'Product 1' }));
-    const result: APIGatewayProxyResult = await handler(event);
-    expect(result.statusCode).toBe(400);
-    expect(result.body).toBe(JSON.stringify({ message: 'Product ID is required' }));
-    expect(result.headers).toEqual(defaultHeaders);
-    expect(getHeaders).toHaveBeenCalledWith([CorsHttpMethod.PUT]);
-  });
-
-  it('should return 404 status code if product is not found', async () => {
-    const event = getEvent(JSON.stringify({ id: 'Non-existent ID' }));
+  it('should return 403 if id is reserved', async () => {
+    const event = {
+      httpMethod: 'PUT',
+      path: '/products',
+      body: JSON.stringify({ id: getReservedId(0), title: 'Test Product', price: 100, count: 10 }),
+    } as unknown as APIGatewayProxyEvent;
     const result = await handler(event);
+
+    expect(result.statusCode).toBe(403);
+    expect(JSON.parse(result.body).message).toBe('Modification of this product is forbidden');
+  });
+
+  /* it('should return 404 if product is not found', async () => {
+    const event = {
+      httpMethod: 'PUT',
+      path: '/products',
+      body: JSON.stringify({
+        id: crypto.randomUUID(),
+        title: 'Test Product',
+        description: 'Test Description',
+        price: 100,
+        count: 10,
+      }),
+    } as unknown as APIGatewayProxyEvent;
+
+    // sendMock.mockRejectedValueOnce({
+    //   name: 'TransactionCanceledException',
+    //   CancellationReasons: [
+    //     {
+    //       Code: 'ConditionalCheckFailed',
+    //     },
+    //   ],
+    // });
+    // const result = await handler(event);
+
+    // const error = new Error('Transaction cancelled');
+    // error.name = 'TransactionCanceledException';
+    // (error as any).CancellationReasons = [
+    //   {
+    //     Code: 'ConditionalCheckFailed',
+    //   },
+    // ];
+    // sendMock.mockRejectedValueOnce(error);
+
+    (DynamoDBDocumentClient.from as jest.Mock).mockImplementation(() => ({
+      send: sendMock.mockImplementation(async (command) => {
+        if (command.CommandName === 'TransactWriteItemsCommand') {
+          const error = new Error('Transaction cancelled');
+          error.name = 'TransactionCanceledException';
+          (error as any).CancellationReasons = [
+            {
+              Code: 'ConditionalCheckFailed',
+            },
+          ];
+          throw error;
+        }
+        return {};
+      }),
+    }));
+
+    const result = await handler(event);
+
     expect(result.statusCode).toBe(404);
-    expect(result.body).toBe(JSON.stringify({ message: 'Product not found' }));
-    expect(result.headers).toEqual(defaultHeaders);
-    expect(getHeaders).toHaveBeenCalledWith([CorsHttpMethod.PUT]);
-  });
+    expect(JSON.parse(result.body)).toEqual({
+      message: 'Product not found',
+    });
+  }); */
 
-  it('should return 200 status code and product data if product is found', async () => {
-    const id = products[0].id;
-    const event = getEvent(JSON.stringify({ id }));
-    const result = await handler(event);
-    const product = products.find((item) => item.id === id);
-    expect(result.statusCode).toBe(200);
-    expect(result.body).toBe(JSON.stringify({ message: 'Product updated successfully', product }));
-    expect(result.headers).toEqual(defaultHeaders);
-    expect(getHeaders).toHaveBeenCalledWith([CorsHttpMethod.PUT]);
-  });
+  // it('should return 200 if product is successfully updated', async () => {
+  //   const event = {
+  //     httpMethod: 'PUT',
+  //     path: '/products',
+  //     body: JSON.stringify({
+  //       id: crypto.randomUUID(),
+  //       title: 'Test Product',
+  //       description: 'Test Description',
+  //       price: 100,
+  //       count: 10,
+  //     }),
+  //   } as unknown as APIGatewayProxyEvent;
+
+  //   sendMock.mockResolvedValue({});
+  //   const result = await handler(event);
+
+  //   expect(result.statusCode).toBe(200);
+  //   expect(result.body).toBeNull();
+  // });
+
+  // it('should return 400 if transaction fails', async () => {
+  //   const event = {
+  //     httpMethod: 'PUT',
+  //     path: '/products',
+  //     body: JSON.stringify({
+  //       id: crypto.randomUUID(),
+  //       title: 'Test Product',
+  //       description: 'Test Description',
+  //       price: 100,
+  //       count: 10,
+  //     }),
+  //   } as unknown as APIGatewayProxyEvent;
+
+  //   sendMock.mockRejectedValue({
+  //     name: 'TransactionCanceledException',
+  //     message: 'Transaction failed',
+  //   });
+
+  //   const result = await handler(event);
+
+  //   expect(result.statusCode).toBe(400);
+  //   expect(JSON.parse(result.body).message).toBe('Transaction failed. Product not updated.');
+  // });
+
+  // it('should return 500 if an unexpected error occurs', async () => {
+  //   const event = {
+  //     httpMethod: 'PUT',
+  //     path: '/products',
+  //     body: JSON.stringify({
+  //       id: crypto.randomUUID(),
+  //       title: 'Test Product',
+  //       description: 'Test Description',
+  //       price: 100,
+  //       count: 10,
+  //     }),
+  //   } as unknown as APIGatewayProxyEvent;
+
+  //   sendMock.mockRejectedValue(new Error('Internal Server Error'));
+  //   const result = await handler(event);
+
+  //   expect(result.statusCode).toBe(500);
+  //   expect(JSON.parse(result.body).message).toBe('Internal Server Error');
+  // });
 });
- */

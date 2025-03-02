@@ -1,4 +1,4 @@
-import { Product } from './types';
+import { Product, Stock } from './types';
 import { cleanString, getReservedId, randomCount } from './utils';
 
 const productsPart: Partial<Product>[] = [
@@ -107,3 +107,17 @@ export function getProducts(): Product[] {
 }
 
 export const products = getProducts();
+
+export function getProductsWithoutCount(products?: Product[]): Product[] {
+  const productsWithCount = products ?? getProducts();
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+  return productsWithCount.map(({ count, ...rest }) => rest) as Product[];
+}
+
+export function getStock(products?: Product[], count?: number): Stock[] {
+  const productsWithCount = products ?? getProducts();
+  return productsWithCount.map((product) => ({
+    product_id: product.id,
+    count: count ?? product.count,
+  }));
+}
