@@ -11,7 +11,7 @@ servers:
   - url: "http://localhost:5173"
     description: "Local development server 2"
   - url: "http://localhost:4173"
-    description: "Local development server 3
+    description: "Local development server 3"
   - url: "http://localhost:5500"
     description: "Local development server 4"
 paths:
@@ -37,8 +37,39 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+    post:
+      summary: "Create a new product"
+      description: "Creates a new product with the provided details"
+      operationId: "createProduct"
+      tags:
+        - "Products"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: "Product created successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: "Invalid request: body is required or Invalid JSON format"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     put:
-      summary: "Update (Add) product"
+      summary: "Update product"
       description: "Updates an existing product"
       operationId: "updateProduct"
       tags:
@@ -88,7 +119,7 @@ paths:
           required: true
           schema:
             type: "string"
-          example: "7567ec4b-b10c-48c5-9345-fc73c48a80aa"
+          example: "7567ec4b-b10c-48c5-9345-fc73c48a8000"
       responses:
         "200":
           description: "Successful operation"
@@ -126,7 +157,7 @@ paths:
           required: true
           schema:
             type: "string"
-          example: "7567ec4b-b10c-48c5-9345-fc73c48a80aa"
+          example: "7567ec4b-b10c-48c5-9345-fc73c48a8000"
       responses:
         "200":
           description: "Product deleted successfully"
@@ -157,7 +188,7 @@ components:
         id:
           type: string
           format: uuid
-          example: "7567ec4b-b10c-48c5-9345-fc73c48a80aa"
+          example: "7567ec4b-b10c-48c5-9345-fc73c48a8000"
         title:
           type: string
           example: "Super Product"
@@ -168,10 +199,41 @@ components:
           type: number
           format: float
           example: 549.99
+        count:
+          type: integer
+          example: 10
+        imageURL:
+          type: string
+          example: "https://example.com/image.png"
       required:
         - id
         - title
         - price
+        - count
+
+    ProductInput:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Super Product"
+        description:
+          type: string
+          example: "Experience the ultimate power in a tiny package"
+        price:
+          type: number
+          format: float
+          example: 549.99
+        count:
+          type: integer
+          example: 10
+        imageURL:
+          type: string
+          example: "https://example.com/image.png"
+      required:
+        - title
+        - price
+        - count
 
     Error:
       type: object

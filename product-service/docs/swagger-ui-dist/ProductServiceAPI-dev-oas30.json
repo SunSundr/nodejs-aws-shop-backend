@@ -62,8 +62,58 @@
           }
         }
       },
+      "post": {
+        "summary": "Create a new product",
+        "description": "Creates a new product with the provided details",
+        "operationId": "createProduct",
+        "tags": [
+          "Products"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request: body is required or Invalid JSON format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
-        "summary": "Update (Add) product",
+        "summary": "Update product",
         "description": "Updates an existing product",
         "operationId": "updateProduct",
         "tags": [
@@ -139,7 +189,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "7567ec4b-b10c-48c5-9345-fc73c48a80aa"
+            "example": "7567ec4b-b10c-48c5-9345-fc73c48a8000"
           }
         ],
         "responses": {
@@ -200,7 +250,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "7567ec4b-b10c-48c5-9345-fc73c48a80aa"
+            "example": "7567ec4b-b10c-48c5-9345-fc73c48a8000"
           }
         ],
         "responses": {
@@ -249,7 +299,7 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "example": "7567ec4b-b10c-48c5-9345-fc73c48a80aa"
+            "example": "7567ec4b-b10c-48c5-9345-fc73c48a8000"
           },
           "title": {
             "type": "string",
@@ -263,12 +313,52 @@
             "type": "number",
             "format": "float",
             "example": 549.99
+          },
+          "count": {
+            "type": "integer",
+            "example": 10
+          },
+          "imageURL": {
+            "type": "string",
+            "example": "https://example.com/image.png"
           }
         },
         "required": [
           "id",
           "title",
-          "price"
+          "price",
+          "count"
+        ]
+      },
+      "ProductInput": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Super Product"
+          },
+          "description": {
+            "type": "string",
+            "example": "Experience the ultimate power in a tiny package"
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "example": 549.99
+          },
+          "count": {
+            "type": "integer",
+            "example": 10
+          },
+          "imageURL": {
+            "type": "string",
+            "example": "https://example.com/image.png"
+          }
+        },
+        "required": [
+          "title",
+          "price",
+          "count"
         ]
       },
       "Error": {
