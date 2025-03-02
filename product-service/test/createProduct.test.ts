@@ -1,8 +1,7 @@
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { APIGatewayProxyEvent } from 'aws-lambda';
-import { handler } from '../lambda/putProduct';
-import { getReservedId } from '../db/utils';
+import { handler } from '../lambda/createProduct';
 import { HttpMethod } from '../lambda/@types';
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
@@ -12,13 +11,12 @@ describe('Lambda Handler', () => {
   const consoleLogSpy = jest.spyOn(globalThis.console, 'log').mockImplementation(() => {});
   const getEvent = (body: unknown) => {
     return {
-      httpMethod: HttpMethod.PUT,
+      httpMethod: HttpMethod.POST,
       path: '/products',
       body,
     } as APIGatewayProxyEvent;
   };
   const testBody = JSON.stringify({
-    id: crypto.randomUUID(),
     title: 'Test Product',
     description: 'Test Description',
     price: 100,
@@ -35,22 +33,12 @@ describe('Lambda Handler', () => {
   });
 
   it('should log the formatted event information', async () => {
-    const event = getEvent({});
+    const event = getEvent(testBody);
 
     await handler(event);
 
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining(event.httpMethod));
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining(event.path));
-  });
-
-  it('should return 200 if product is successfully updated', async () => {
-    const event = getEvent(testBody);
-    ddbMock.resolvesOnce({});
-
-    const result = await handler(event);
-
-    expect(result.statusCode).toBe(200);
-    expect(JSON.parse(result.body)).toBeNull();
   });
 
   it('should return 400 if body is missing', async () => {
@@ -62,37 +50,18 @@ describe('Lambda Handler', () => {
     expect(JSON.parse(result.body).message).toBe('Invalid request: body is required');
   });
 
-  it('should return 400 if `id` or `title` is missing', async () => {
-    const event = getEvent(
-      JSON.stringify({ description: 'Test Description', price: 100, count: 10 }),
-    );
+  it('should return 400 if required fields are missing or invalid', async () => {
+    const event = getEvent(JSON.stringify({}));
+
     const result = await handler(event);
 
     expect(result.statusCode).toBe(400);
     expect(JSON.parse(result.body).message).toBe('Invalid input data');
   });
 
-  it('should return 403 if `id` is reserved', async () => {
-    const event = getEvent(
-      JSON.stringify({
-        id: getReservedId(0),
-        title: 'Test Product',
-        description: 'Test Description',
-        price: 100,
-        count: 10,
-      }),
-    );
-
-    const result = await handler(event);
-
-    expect(result.statusCode).toBe(403);
-    expect(JSON.parse(result.body).message).toBe('Modification of this product is forbidden');
-  });
-
   it('should return 400 if count or price is negative', async () => {
     const event = getEvent(
       JSON.stringify({
-        id: crypto.randomUUID(),
         title: 'Test Product',
         description: 'Test Description',
         price: -100,
@@ -106,18 +75,19 @@ describe('Lambda Handler', () => {
     expect(JSON.parse(result.body).message).toBe('Price and count must be non-negative');
   });
 
-  it('should return 404 if product is not found', async () => {
+  it('should return 201 if product is successfully created', async () => {
     const event = getEvent(testBody);
-    const error = new Error('Conditional Check Failed');
-    error.name = 'ConditionalCheckFailedException';
-    ddbMock.rejectsOnce(error);
+    ddbMock.resolvesOnce({});
 
     const result = await handler(event);
 
-    expect(result.statusCode).toBe(404);
-    expect(JSON.parse(result.body)).toEqual({
-      message: 'Product not found',
-    });
+    expect(result.statusCode).toBe(201);
+    const responseBody = JSON.parse(result.body);
+    expect(responseBody.id).toBeDefined();
+    expect(responseBody.title).toBe('Test Product');
+    expect(responseBody.description).toBe('Test Description');
+    expect(responseBody.price).toBe(100);
+    expect(responseBody.count).toBe(10);
   });
 
   it('should return 400 if transaction fails', async () => {
@@ -129,13 +99,12 @@ describe('Lambda Handler', () => {
     const result = await handler(event);
 
     expect(result.statusCode).toBe(400);
-    expect(JSON.parse(result.body).message).toBe('Transaction failed. Product not updated.');
+    expect(JSON.parse(result.body).message).toBe('Transaction failed. Product not created.');
   });
 
   it('should return 500 if an unexpected error occurs', async () => {
     const event = getEvent(testBody);
-    const error = new Error('Internal Server Error');
-    ddbMock.rejectsOnce(error);
+    ddbMock.rejectsOnce(new Error('Internal Server Error'));
 
     const result = await handler(event);
 

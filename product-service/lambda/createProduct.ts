@@ -1,36 +1,45 @@
 import { APIGatewayProxyResult, APIGatewayProxyEvent } from 'aws-lambda';
-import { TransactWriteItemsCommand } from '@aws-sdk/client-dynamodb';
-import { CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
+import { TransactWriteItemsCommand, Put } from '@aws-sdk/client-dynamodb';
 import { randomUUID } from 'crypto';
-import { proxyResult } from './@proxyResult';
-import { formatLog } from './@formatLogs';
 import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../lib/constants';
-import { dbDocClient } from '../db/client';
-
+import { proxyResult } from './@proxyResult';
 import { errorResult } from './@errorResult';
+import { formatLog } from './@formatLogs';
+import { dbDocClient } from '../db/client';
+import { HttpMethod } from './@types';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log(formatLog(event.httpMethod, event.path, event));
   if (!event.body) {
-    return proxyResult(400, CorsHttpMethod.POST, { message: 'Invalid request: body is required' });
+    return proxyResult(400, HttpMethod.POST, { message: 'Invalid request: body is required' });
   }
 
   try {
     const body = JSON.parse(event.body);
-    const { count, price, description, title } = body;
+    const { title, description, price, count } = body;
 
     if (
-      count === undefined ||
-      price === undefined ||
-      description === undefined ||
-      !title ||
-      count < 0 ||
-      price < 0
+      typeof title !== 'string' ||
+      !title.trim() ||
+      typeof description !== 'string' ||
+      !description.trim() ||
+      typeof price !== 'number' ||
+      isNaN(price) ||
+      typeof count !== 'number' ||
+      isNaN(count)
     ) {
-      return proxyResult(400, CorsHttpMethod.POST, { message: 'Invalid input data' });
+      return proxyResult(400, HttpMethod.POST, { message: 'Invalid input data' });
+    }
+
+    if (price < 0 || count < 0) {
+      return proxyResult(400, HttpMethod.POST, { message: 'Price and count must be non-negative' });
     }
 
     const productId = randomUUID();
+
+    const imageURL = body.imageURL
+      ? { imageURL: { S: body.imageURL.toString() } }
+      : ({} as Put['Item']);
 
     const transactionCommand = new TransactWriteItemsCommand({
       TransactItems: [
@@ -40,8 +49,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             Item: {
               id: { S: productId },
               title: { S: title },
-              description: { S: description || '' },
+              description: { S: description },
               price: { N: price.toString() },
+              ...imageURL,
             },
           },
         },
@@ -59,7 +69,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     await dbDocClient.send(transactionCommand);
 
-    return proxyResult(201, CorsHttpMethod.POST, {
+    return proxyResult(201, HttpMethod.POST, {
       id: productId,
       title,
       description,
@@ -69,11 +79,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   } catch (error) {
     console.error('Error creating product:', error);
     if (error instanceof Error && error.name === 'TransactionCanceledException') {
-      return proxyResult(400, CorsHttpMethod.POST, {
+      return proxyResult(400, HttpMethod.POST, {
         message: 'Transaction failed. Product not created.',
       });
     }
 
-    return errorResult(error, CorsHttpMethod.POST);
+    return errorResult(error, HttpMethod.POST);
   }
 };

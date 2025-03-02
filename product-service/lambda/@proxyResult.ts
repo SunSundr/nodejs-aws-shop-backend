@@ -1,10 +1,10 @@
 import { APIGatewayProxyResult } from 'aws-lambda';
-import { CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { getHeaders } from './@headers';
+import { HttpMethod } from './@types';
 
 export function proxyResult(
   statusCode: number,
-  method: CorsHttpMethod,
+  method: HttpMethod,
   body: unknown,
 ): APIGatewayProxyResult {
   return {

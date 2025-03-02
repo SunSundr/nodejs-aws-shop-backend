@@ -2,25 +2,28 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "lib": [
-      "es2020",
-      "dom"
-    ],
+    "lib": ["es2020"],
     "outDir": "dist",
     "declaration": true,
     "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    // These are already included in "strict": true:
+    // "noImplicitAny": true,
+    // "strictNullChecks": true,
+    // "noImplicitThis": true,
+    // "alwaysStrict": true,
+    // -----------------------
+    "noUnusedLocals": true,       // Currently false
+    "noUnusedParameters": true,   // Currently false
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": false,
-    "inlineSourceMap": true,
-    "inlineSources": true,
+    // For Lambda functions
+    "sourceMap": true,
+    "removeComments": true,
+    "skipLibCheck": true,
+    // -----------------------
+    "noFallthroughCasesInSwitch": true,
     "experimentalDecorators": true,
-    "strictPropertyInitialization": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "typeRoots": [
       "./node_modules/@types"
     ]
@@ -28,6 +31,6 @@
   "exclude": [
     "node_modules",
     "cdk.out",
-    "dist",
+    "dist"
   ]
 }

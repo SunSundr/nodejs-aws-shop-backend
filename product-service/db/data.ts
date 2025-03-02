@@ -108,15 +108,13 @@ export function getProducts(): Product[] {
 
 export const products = getProducts();
 
-export function getProductsWithoutCount(products?: Product[]): Product[] {
-  const productsWithCount = products ?? getProducts();
+export function getProductsWithoutCount(products: Product[]): Product[] {
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-  return productsWithCount.map(({ count, ...rest }) => rest) as Product[];
+  return products.map(({ count, ...rest }) => rest) as Product[];
 }
 
-export function getStock(products?: Product[], count?: number): Stock[] {
-  const productsWithCount = products ?? getProducts();
-  return productsWithCount.map((product) => ({
+export function getStock(products: Product[], count?: number): Stock[] {
+  return products.map((product) => ({
     product_id: product.id,
     count: count ?? product.count,
   }));
