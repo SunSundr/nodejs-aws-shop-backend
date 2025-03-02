@@ -19,7 +19,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const body = JSON.parse(event.body);
     const { count, price, description, title } = body;
 
-    if (count === undefined || price === undefined || description === undefined || !title) {
+    if (
+      count === undefined ||
+      price === undefined ||
+      description === undefined ||
+      !title ||
+      count < 0 ||
+      price < 0
+    ) {
       return proxyResult(400, CorsHttpMethod.POST, { message: 'Invalid input data' });
     }
 
