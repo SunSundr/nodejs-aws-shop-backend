@@ -208,6 +208,7 @@ components:
       required:
         - id
         - title
+        - description
         - price
         - count
 
@@ -232,6 +233,7 @@ components:
           example: "https://example.com/image.png"
       required:
         - title
+        - description
         - price
         - count
 

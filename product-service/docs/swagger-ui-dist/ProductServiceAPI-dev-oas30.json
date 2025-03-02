@@ -326,6 +326,7 @@
         "required": [
           "id",
           "title",
+          "description",
           "price",
           "count"
         ]
@@ -357,6 +358,7 @@
         },
         "required": [
           "title",
+          "description",
           "price",
           "count"
         ]
