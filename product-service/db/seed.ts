@@ -1,7 +1,7 @@
 import { ScanCommand, DeleteCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { dbDocClient } from './client';
 import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../lib/constants';
-import { products } from './data';
+import { getProductsWithoutCount, products } from './data';
 
 async function clearTable(tableName: string) {
   const scanCommand = new ScanCommand({ TableName: tableName });
@@ -23,7 +23,8 @@ async function clearTable(tableName: string) {
 }
 
 async function populateProductsTable() {
-  for (const product of products) {
+  const productsWithoutCount = getProductsWithoutCount(products);
+  for (const product of productsWithoutCount) {
     const putCommand = new PutCommand({
       TableName: PRODUCTS_TABLE_NAME,
       Item: {
