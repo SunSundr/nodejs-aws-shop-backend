@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { orders } from './@mockData';
 import { proxyResult } from './@proxyResult';
+import { HttpMethod } from './@types';
 
 // Temporary Stub Function
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -9,6 +9,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   const order = orders.find((o) => o.id === id);
 
   return order
-    ? proxyResult(200, CorsHttpMethod.GET, order)
-    : proxyResult(404, CorsHttpMethod.GET, { message: 'Order not found' });
+    ? proxyResult(200, HttpMethod.GET, order)
+    : proxyResult(404, HttpMethod.GET, { message: 'Order not found' });
 };

@@ -4,6 +4,7 @@ import { Cors, LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
+import { DynamoDBTables } from '../db/tables';
 
 export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -25,9 +26,11 @@ export class ProductServiceStack extends cdk.Stack {
 
     // Lambda functions
     // --------------------------------------------------------------
+    const runtime = Runtime.NODEJS_22_X;
+
     // GET (/products)
     const productsLambda = new NodejsFunction(this, 'ProductsLambda', {
-      runtime: Runtime.NODEJS_22_X,
+      runtime,
       functionName: 'GetProductList',
       entry: path.join(__dirname, '../lambda/getProductList.ts'),
       // bundling: {
@@ -38,72 +41,91 @@ export class ProductServiceStack extends cdk.Stack {
 
     // GET (/products/:id)
     const productLambda = new NodejsFunction(this, 'ProductLambda', {
-      runtime: Runtime.NODEJS_22_X,
+      runtime,
       functionName: 'GetProductsByID',
       entry: path.join(__dirname, '../lambda/getProductByID.ts'),
     });
 
+    // POST (/products)
+    const postProductLambdaHandler = new NodejsFunction(this, 'PostProduct', {
+      runtime,
+      functionName: 'PostProduct',
+      entry: path.join(__dirname, '../lambda/createProduct.ts'),
+    });
+
     // PUT (/products)
     const putProductLambdaHandler = new NodejsFunction(this, 'PutProduct', {
-      runtime: Runtime.NODEJS_22_X,
-      functionName: `PutProduct-${stage}`,
+      runtime,
+      functionName: 'PutProduct',
       entry: path.join(__dirname, '../lambda/putProduct.ts'),
     });
 
     // DELETE (/products/:id)
     const deleteProductByIdLambdaHandler = new NodejsFunction(this, 'DeleteProductByID', {
-      runtime: Runtime.NODEJS_22_X,
-      functionName: `DeleteProductByID-${stage}`,
+      runtime,
+      functionName: 'DeleteProductByID',
       entry: path.join(__dirname, '../lambda/deleteProductByID.ts'),
     });
 
+    // -----DEV MOCKS:
+
     // GET (/profile/cart)
     const getProfileCartLambdaHandler = new NodejsFunction(this, 'GetProfileCart', {
-      runtime: Runtime.NODEJS_22_X,
+      runtime,
       functionName: `GetProfileCart-${stage}`,
       entry: path.join(__dirname, '../lambda/getProfileCart.ts'),
     });
 
     // PUT (/profile/cart)
     const putProfileCartLambdaHandler = new NodejsFunction(this, 'PutProfileCart', {
-      runtime: Runtime.NODEJS_22_X,
+      runtime,
       functionName: `PutProfileCart-${stage}`,
       entry: path.join(__dirname, '../lambda/putProfileCart.ts'),
     });
 
     // GET /order
     const getOrdersLambdaHandler = new NodejsFunction(this, 'GetOrders', {
-      runtime: Runtime.NODEJS_22_X,
+      runtime,
       functionName: `GetOrders-${stage}`,
       entry: path.join(__dirname, '../lambda/getOrders.ts'),
     });
 
     // PUT /order
     const putOrderLambdaHandler = new NodejsFunction(this, 'PutOrder', {
-      runtime: Runtime.NODEJS_22_X,
+      runtime,
       functionName: `PutOrder-${stage}`,
       entry: path.join(__dirname, '../lambda/putOrder.ts'),
     });
 
     // GET /order/:id
     const getOrderByIdLambdaHandler = new NodejsFunction(this, 'GetOrderById', {
-      runtime: Runtime.NODEJS_22_X,
+      runtime,
       functionName: `GetOrderById-${stage}`,
       entry: path.join(__dirname, '../lambda/getOrderById.ts'),
     });
 
     // DELETE /order/:id
     const deleteOrderLambdaHandler = new NodejsFunction(this, 'DeleteOrder', {
-      runtime: Runtime.NODEJS_22_X,
+      runtime,
       functionName: `DeleteOrder-${stage}`,
       entry: path.join(__dirname, '../lambda/deleteOrder.ts'),
     });
 
     // PUT /order/:id/status
     const putOrderStatusLambdaHandler = new NodejsFunction(this, 'PutOrderStatus', {
-      runtime: Runtime.NODEJS_22_X,
+      runtime,
       functionName: `PutOrderStatus-${stage}`,
       entry: path.join(__dirname, '../lambda/putOrderStatus.ts'),
+    });
+
+    new DynamoDBTables(this, 'ProductServiceDatabase', {
+      lambdas: {
+        getProductByID: productLambda,
+        getProductsList: productsLambda,
+        postProduct: postProductLambdaHandler,
+        deleteProductByID: deleteProductByIdLambdaHandler,
+        putProduct: putProductLambdaHandler,
+      },
     });
 
     // API Gateway endpoints (products)
@@ -114,6 +136,7 @@ export class ProductServiceStack extends cdk.Stack {
     product_id.addMethod(httpMethod.GET, new LambdaIntegration(productLambda));
     products.addMethod(httpMethod.PUT, new LambdaIntegration(putProductLambdaHandler));
     product_id.addMethod(httpMethod.DELETE, new LambdaIntegration(deleteProductByIdLambdaHandler));
+    products.addMethod(httpMethod.POST, new LambdaIntegration(postProductLambdaHandler));
 
     // API Gateway endpoints (profile)
     const profile = api.root.addResource('profile');

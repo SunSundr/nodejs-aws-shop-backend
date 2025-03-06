@@ -1,22 +1,22 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { getHeaders } from '../lambda/@headers';
 import { cart, orders } from '../lambda/@mockData';
+import { HttpMethod } from '../lambda/@types';
 
 jest.mock('../lambda/@headers', () => ({
-  getHeaders: jest.fn((methods: CorsHttpMethod[]) => ({
+  getHeaders: jest.fn((methods: HttpMethod[]) => ({
     'Access-Control-Allow-Methods': methods.join(','),
-    'Access-Control-Allow-Origin': CorsHttpMethod.ANY,
+    'Access-Control-Allow-Origin': HttpMethod.ANY,
   })),
 }));
 
 // --------------------------------------------
 const stubFiles = [
-  ['deleteOrder.ts', CorsHttpMethod.DELETE, null],
-  ['getOrders.ts', CorsHttpMethod.GET, orders],
-  ['getProfileCart.ts', CorsHttpMethod.GET, cart],
-  ['putOrder.ts', CorsHttpMethod.PUT, null],
-  ['putOrderStatus.ts', CorsHttpMethod.PUT, null],
+  ['deleteOrder.ts', HttpMethod.DELETE, null],
+  ['getOrders.ts', HttpMethod.GET, orders],
+  ['getProfileCart.ts', HttpMethod.GET, cart],
+  ['putOrder.ts', HttpMethod.PUT, null],
+  ['putOrderStatus.ts', HttpMethod.PUT, null],
 ];
 
 stubFiles.forEach((file) => {
@@ -55,8 +55,8 @@ describe('Lambda Handler (putProfileCart.ts)', () => {
   });
 
   const defaultHeaders = {
-    'Access-Control-Allow-Methods': CorsHttpMethod.PUT,
-    'Access-Control-Allow-Origin': CorsHttpMethod.ANY,
+    'Access-Control-Allow-Methods': HttpMethod.PUT,
+    'Access-Control-Allow-Origin': HttpMethod.ANY,
   };
 
   const getEvent = (body: unknown): APIGatewayProxyEvent =>
@@ -68,7 +68,7 @@ describe('Lambda Handler (putProfileCart.ts)', () => {
     expect(result.statusCode).toBe(400);
     expect(result.body).toBe(JSON.stringify({ message: 'Invalid request: body is required' }));
     expect(result.headers).toEqual(defaultHeaders);
-    expect(getHeaders).toHaveBeenCalledWith([CorsHttpMethod.PUT]);
+    expect(getHeaders).toHaveBeenCalledWith([HttpMethod.PUT]);
   });
 
   it('should return 200 status code and null body if body is provided', async () => {
@@ -77,7 +77,7 @@ describe('Lambda Handler (putProfileCart.ts)', () => {
     expect(result.statusCode).toBe(200);
     expect(result.body).toBe(JSON.stringify(null));
     expect(result.headers).toEqual(defaultHeaders);
-    expect(getHeaders).toHaveBeenCalledWith([CorsHttpMethod.PUT]);
+    expect(getHeaders).toHaveBeenCalledWith([HttpMethod.PUT]);
   });
 });
 
@@ -93,8 +93,8 @@ describe('Lambda Handler (getOrderById.ts)', () => {
   });
 
   const defaultHeaders = {
-    'Access-Control-Allow-Methods': CorsHttpMethod.GET,
-    'Access-Control-Allow-Origin': CorsHttpMethod.ANY,
+    'Access-Control-Allow-Methods': HttpMethod.GET,
+    'Access-Control-Allow-Origin': HttpMethod.ANY,
   };
 
   const getEvent = (id: string | null): APIGatewayProxyEvent =>
@@ -107,7 +107,7 @@ describe('Lambda Handler (getOrderById.ts)', () => {
     expect(result.statusCode).toBe(200);
     expect(result.body).toBe(JSON.stringify(orders[0]));
     expect(result.headers).toEqual(defaultHeaders);
-    expect(getHeaders).toHaveBeenCalledWith([CorsHttpMethod.GET]);
+    expect(getHeaders).toHaveBeenCalledWith([HttpMethod.GET]);
   });
 
   it('should return 404 status code if order is not found', async () => {
@@ -116,6 +116,6 @@ describe('Lambda Handler (getOrderById.ts)', () => {
     expect(result.statusCode).toBe(404);
     expect(result.body).toBe(JSON.stringify({ message: 'Order not found' }));
     expect(result.headers).toEqual(defaultHeaders);
-    expect(getHeaders).toHaveBeenCalledWith([CorsHttpMethod.GET]);
+    expect(getHeaders).toHaveBeenCalledWith([HttpMethod.GET]);
   });
 });
