@@ -8,3 +8,8 @@ export enum HttpMethod {
   HEAD = 'HEAD',
   ANY = '*',
 }
+
+export type OperationResult = {
+  status: boolean;
+  error?: unknown;
+};

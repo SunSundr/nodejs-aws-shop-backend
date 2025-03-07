@@ -5,6 +5,7 @@ import { HttpMethod } from './@types';
 import { proxyResult } from './@proxyResult';
 import { errorResult } from './@errorResult';
 import { IMPORT_BUCKET_NAME, UPLOADED_KEY } from '../constants';
+import { getUniqObjectKey } from './utils/getUniqObjectKey';
 
 const s3Client = new S3Client();
 
@@ -18,7 +19,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     const putObjectCommand = new PutObjectCommand({
       Bucket: IMPORT_BUCKET_NAME,
-      Key: `${UPLOADED_KEY}/${fileName}`,
+      Key: getUniqObjectKey(fileName, UPLOADED_KEY),
       ContentType: 'text/csv',
     });
 

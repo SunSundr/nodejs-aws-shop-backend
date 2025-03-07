@@ -5,7 +5,8 @@ import { Construct } from 'constructs';
 import { Cors, LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
-import { CLOUDFRONT_DOMAIN_NAME, IMPORT_BUCKET_NAME } from './constants';
+import { CLOUDFRONT_DOMAIN_NAME, IMPORT_BUCKET_NAME, UPLOADED_KEY } from './constants';
+import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -15,6 +16,7 @@ export class ImportServiceStack extends cdk.Stack {
     const httpMethod = cdk.aws_apigatewayv2.HttpMethod;
     const cloudFrontDomainName = cdk.Fn.importValue(CLOUDFRONT_DOMAIN_NAME);
 
+    // Import S3 Bucket:
     const bucket = new s3.Bucket(this, 'ImportServiceBucket', {
       bucketName: IMPORT_BUCKET_NAME,
       // versioned: false,
@@ -37,18 +39,6 @@ export class ImportServiceStack extends cdk.Stack {
       ],
     });
 
-    const importProductsFileLambda = new NodejsFunction(this, 'ImportProductsFileLambda', {
-      runtime: Runtime.NODEJS_22_X,
-      functionName: 'ImportProductsFile',
-      entry: path.join(__dirname, './lambda/importProductsFile.ts'),
-      // bundling: {
-      //   minify: true,
-      //   target: 'node22',
-      // },
-    });
-
-    bucket.grantPut(importProductsFileLambda);
-
     // API Gateway
     const api = new RestApi(this, 'ImportServiceAPI', {
       restApiName: 'ImportServiceAPI',
@@ -62,7 +52,33 @@ export class ImportServiceStack extends cdk.Stack {
       },
     });
 
+    // Import lambda:
+    const importProductsFileLambda = new NodejsFunction(this, 'ImportProductsFileLambda', {
+      runtime: Runtime.NODEJS_22_X,
+      functionName: 'ImportProductsFile',
+      entry: path.join(__dirname, './lambda/importProductsFile.ts'),
+    });
+
+    // Parser lambda:
+    const importFileParserLambda = new NodejsFunction(this, 'ImportFileParserLambda', {
+      runtime: Runtime.NODEJS_22_X,
+      functionName: 'ImportFileParserLambda',
+      entry: path.join(__dirname, './lambda/importFileParser.ts'),
+    });
+
+    // Permissions
+    bucket.grantPut(importProductsFileLambda);
+    bucket.grantReadWrite(importFileParserLambda);
+
+    // API Gateway endpoints
     const importResource = api.root.addResource('import');
     importResource.addMethod(httpMethod.GET, new LambdaIntegration(importProductsFileLambda));
+
+    // Notification
+    bucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new LambdaDestination(importFileParserLambda),
+      { prefix: `${UPLOADED_KEY}/` },
+    );
   }
 }
