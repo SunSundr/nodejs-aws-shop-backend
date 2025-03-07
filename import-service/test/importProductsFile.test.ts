@@ -1,11 +1,15 @@
-import { mockClient } from 'aws-sdk-client-mock';
 import { S3Client } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { handler } from '../lib/lambda/importProductsFile';
 import { APIGatewayProxyEvent } from 'aws-lambda';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { mockClient } from 'aws-sdk-client-mock';
+import { handler } from '../lib/lambda/importProductsFile';
 
 jest.mock('@aws-sdk/s3-request-presigner', () => ({
   getSignedUrl: jest.fn(),
+}));
+
+jest.mock('../lib/lambda/utils/getUniqObjectKey', () => ({
+  getUniqObjectKey: jest.fn(() => 'uploaded/file.csv'),
 }));
 
 const s3Mock = mockClient(S3Client);

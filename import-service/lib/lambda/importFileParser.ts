@@ -2,9 +2,9 @@ import { S3Event, Context, S3EventRecord } from 'aws-lambda';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
 import csvParser from 'csv-parser';
+import { FAILED_KEY, PARSED_KEY, UPLOADED_KEY } from '../constants';
 import { getUniqObjectKey } from './utils/getUniqObjectKey';
 import { moveFile } from './utils/moveFile';
-import { FAILED_KEY, PARSED_KEY, UPLOADED_KEY } from '../constants';
 import { withRetry } from './utils/withRetry';
 
 const s3Client = new S3Client({});
