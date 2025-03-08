@@ -14,7 +14,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const fileName = event.queryStringParameters?.name;
 
     if (!fileName) {
-      return proxyResult(400, HttpMethod.GET, { message: 'File name is required' });
+      return proxyResult(400, HttpMethod.GET, { message: 'File name is required' }, event.headers);
     }
 
     const putObjectCommand = new PutObjectCommand({
@@ -27,9 +27,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       expiresIn: 60,
     });
 
-    return proxyResult(200, HttpMethod.GET, signedUrl);
+    return proxyResult(200, HttpMethod.GET, signedUrl, event.headers);
   } catch (error) {
     console.error('Error generating signed URL:', error);
-    return errorResult(error, HttpMethod.GET);
+    return errorResult(error, HttpMethod.GET, event.headers);
   }
 };

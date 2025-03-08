@@ -19,6 +19,7 @@ const getEvent = (fileName: string | null = 'test.csv') =>
     queryStringParameters: {
       name: fileName,
     },
+    headers: [],
   }) as unknown as APIGatewayProxyEvent;
 
 describe('importProductsFile', () => {

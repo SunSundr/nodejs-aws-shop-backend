@@ -12,8 +12,8 @@
     // "noImplicitThis": true,
     // "alwaysStrict": true,
     // -----------------------
-    "noUnusedLocals": true,       // Currently false
-    "noUnusedParameters": true,   // Currently false
+    "noUnusedLocals": true, // Currently false
+    "noUnusedParameters": true, // Currently false
     "noImplicitReturns": true,
     // For Lambda functions
     "sourceMap": true,
@@ -24,13 +24,7 @@
     "experimentalDecorators": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "typeRoots": [
-      "./node_modules/@types"
-    ]
+    "typeRoots": ["./node_modules/@types"]
   },
-  "exclude": [
-    "node_modules",
-    "cdk.out",
-    "dist"
-  ]
+  "exclude": ["node_modules", "cdk.out", "dist"]
 }

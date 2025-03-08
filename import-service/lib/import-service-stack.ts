@@ -5,7 +5,12 @@ import { Construct } from 'constructs';
 import { Cors, LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
-import { CLOUDFRONT_DOMAIN_NAME, IMPORT_BUCKET_NAME, UPLOADED_KEY } from './constants';
+import {
+  ALLOWED_ORIGINS,
+  CLOUDFRONT_DOMAIN_NAME,
+  IMPORT_BUCKET_NAME,
+  UPLOADED_KEY,
+} from './constants';
 import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
 
 export class ImportServiceStack extends cdk.Stack {
@@ -28,11 +33,7 @@ export class ImportServiceStack extends cdk.Stack {
       cors: [
         {
           allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
-          allowedOrigins: [
-            'http://localhost:5173',
-            'http://sunsundr.store',
-            `https://${cloudFrontDomainName}`,
-          ],
+          allowedOrigins: Array.from(new Set([...ALLOWED_ORIGINS, cloudFrontDomainName])),
           allowedHeaders: ['*'],
           exposedHeaders: ['ETag'],
         },
@@ -48,7 +49,7 @@ export class ImportServiceStack extends cdk.Stack {
       },
       defaultCorsPreflightOptions: {
         allowOrigins: Cors.ALL_ORIGINS,
-        // allowMethods: Cors.ALL_METHODS,
+        //allowMethods: Cors.ALL_METHODS,
       },
     });
 
