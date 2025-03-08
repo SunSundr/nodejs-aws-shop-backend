@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "product-service",
+			"path": "product-service"
+		},
+		{
+			"name": "import-service",
+			"path": "import-service"
+		}
+	],
+	"settings": {
+		"jest.disabledWorkspaceFolders": [
+			"nodejs-aws-shop-backend"
+		]
+	}
+}
