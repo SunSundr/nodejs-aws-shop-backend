@@ -33,7 +33,12 @@ export class ImportServiceStack extends cdk.Stack {
       cors: [
         {
           allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
-          allowedOrigins: Array.from(new Set([...ALLOWED_ORIGINS, cloudFrontDomainName])),
+          allowedOrigins: Array.from(
+            new Set([
+              ...ALLOWED_ORIGINS.map((origin) => origin.trim().toLowerCase()),
+              cloudFrontDomainName.trim().toLowerCase(),
+            ]),
+          ).map((origin) => (origin.startsWith('http') ? origin : `https://${origin}`)),
           allowedHeaders: ['*'],
           exposedHeaders: ['ETag'],
         },
@@ -63,7 +68,7 @@ export class ImportServiceStack extends cdk.Stack {
     // Parser lambda:
     const importFileParserLambda = new NodejsFunction(this, 'ImportFileParserLambda', {
       runtime: Runtime.NODEJS_22_X,
-      functionName: 'ImportFileParserLambda',
+      functionName: 'ImportFileParser',
       entry: path.join(__dirname, './lambda/importFileParser.ts'),
     });
 
