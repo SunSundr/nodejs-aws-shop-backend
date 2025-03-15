@@ -1,16 +1,43 @@
 import * as cdk from 'aws-cdk-lib';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as path from 'path';
 import { Construct } from 'constructs';
 import { Cors, LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
-import * as path from 'path';
+// import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { DynamoDBTables } from '../db/tables';
+import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
     const stage = process.env.STAGE || 'dev';
     const httpMethod = cdk.aws_apigatewayv2.HttpMethod;
+    const runtime = Runtime.NODEJS_22_X;
+
+    const catalogItemsQueue = new sqs.Queue(this, 'ProductsQueue', {
+      queueName: 'CatalogItemsQueue',
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const catalogLambdaHandler = new NodejsFunction(this, 'CatalogBatchProcessLambda', {
+      runtime,
+      functionName: 'CatalogBatchProcess',
+      entry: path.join(__dirname, '../lambda/catalogBatchProcess.ts'),
+      // environment: {
+      //   SQS_QUEUE_URL: catalogItemsQueue.queueUrl,
+      // },
+    });
+
+    catalogLambdaHandler.addEventSource(new SqsEventSource(catalogItemsQueue, { batchSize: 5 }));
+
+    new cdk.CfnOutput(this, 'CatalogItemsQueueUrlOutput', {
+      value: catalogItemsQueue.queueUrl,
+    });
+    new cdk.CfnOutput(this, 'CatalogItemsQueueArn', {
+      value: catalogItemsQueue.queueArn,
+    });
 
     // API Gateway
     const api = new RestApi(this, 'ProductServiceAPI', {
@@ -26,7 +53,6 @@ export class ProductServiceStack extends cdk.Stack {
 
     // Lambda functions
     // --------------------------------------------------------------
-    const runtime = Runtime.NODEJS_22_X;
 
     // GET (/products)
     const productsLambda = new NodejsFunction(this, 'ProductsLambda', {
@@ -125,6 +151,7 @@ export class ProductServiceStack extends cdk.Stack {
         postProduct: postProductLambdaHandler,
         deleteProductByID: deleteProductByIdLambdaHandler,
         putProduct: putProductLambdaHandler,
+        catalogBatchProcess: catalogLambdaHandler,
       },
     });
 

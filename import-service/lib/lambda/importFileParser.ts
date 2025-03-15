@@ -6,14 +6,20 @@ import { FAILED_KEY, PARSED_KEY, UPLOADED_KEY } from '../constants';
 import { getUniqObjectKey } from './utils/getUniqObjectKey';
 import { moveFile } from './utils/moveFile';
 import { withRetry } from './utils/withRetry';
+import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 
-const s3Client = new S3Client({});
+const s3Client = new S3Client();
+const sqsClient = new SQSClient();
 
 export const handler = async (event: S3Event, _context: Context): Promise<void> => {
+  const queueUrl = process.env.SQS_QUEUE_URL;
+  if (!queueUrl) {
+    throw new Error('SQS_QUEUE_URL environment variable is not set');
+  }
   await Promise.all(
     event.Records.map(async (record) => {
       try {
-        await processFile(record.s3.bucket.name, record.s3.object.key);
+        await processFile(record.s3.bucket.name, record.s3.object.key, queueUrl);
       } catch (error) {
         await handleFileError(record, error);
       }
@@ -21,7 +27,24 @@ export const handler = async (event: S3Event, _context: Context): Promise<void> 
   );
 };
 
-async function processFile(bucketName: string, objectKey: string): Promise<void> {
+export const createSQSItem = async (queueUrl: string, data: unknown) => {
+  console.log('Creating SQS item:', data);
+
+  const sqsSendMessage = new SendMessageCommand({
+    QueueUrl: queueUrl,
+    MessageBody: JSON.stringify(data),
+  });
+
+  try {
+    await sqsClient.send(sqsSendMessage);
+    console.log('SQS item sent successfully');
+  } catch (err) {
+    console.error('Error sending SQS item:', err);
+    throw err;
+  }
+};
+
+async function processFile(bucketName: string, objectKey: string, queueUrl: string): Promise<void> {
   if (!objectKey.startsWith(`${UPLOADED_KEY}/`)) {
     console.log(`File ${objectKey} is not in the uploaded folder. Skipping.`);
     return;
@@ -47,11 +70,8 @@ async function processFile(bucketName: string, objectKey: string): Promise<void>
         throw new Error(`Invalid characters found in row: ${row[key]}`);
       }
     }
-
-    console.log('Parsed row:', row);
+    await createSQSItem(queueUrl, row);
   }
-
-  console.log('Parsing is ended');
 
   await withRetry(() =>
     moveFile(s3Client, bucketName, objectKey, getUniqObjectKey(objectKey, PARSED_KEY)),
