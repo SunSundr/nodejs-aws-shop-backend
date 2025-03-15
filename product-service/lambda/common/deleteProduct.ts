@@ -36,7 +36,9 @@ export async function deleteProduct(
   if (!category) {
     const product = await getProductRaw(dbDocClient, productId);
     if (!product) {
-      throw new Error('Internal error: Product not found');
+      const error = new Error('Transaction Canceled');
+      error.name = 'CustomTransactionCanceled';
+      throw error;
     }
     category = product.category.S!;
   }

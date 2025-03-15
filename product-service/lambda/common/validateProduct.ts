@@ -8,7 +8,7 @@ export function validateProduct<T = Product | ProductWithoutId>(
 ): ValidateResult<T> {
   const { id, title, description } = body;
   const price = typeof body.price === 'string' && body.price === '' ? NaN : Number(body.price);
-  const count = typeof body.count === 'string' && body.count === '' ? NaN : Number(body.price);
+  const count = typeof body.count === 'string' && body.count === '' ? NaN : Number(body.count);
 
   const isIdValid =
     !verifyId ||

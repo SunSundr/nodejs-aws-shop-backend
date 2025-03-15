@@ -4,6 +4,15 @@ import { APIGatewayProxyEvent } from 'aws-lambda';
 import { handler } from '../lambda/deleteProductByID';
 import { HttpMethod } from '../lambda/@types';
 import { getReservedId } from '../db/utils';
+import { DEFAULT_CATEGORY } from '../lib/constants';
+
+const defaultProductRaw: { category: { S: string } } | null = {
+  category: { S: DEFAULT_CATEGORY },
+};
+let productRaw: typeof defaultProductRaw | null = defaultProductRaw;
+jest.mock('../lambda/common/getProduct.ts', () => ({
+  getProductRaw: jest.fn((_dbDocClient: DynamoDBDocumentClient, _productId: string) => productRaw),
+}));
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 
@@ -20,6 +29,7 @@ describe('Lambda Handler', () => {
 
   beforeEach(() => {
     ddbMock.reset();
+    productRaw = defaultProductRaw;
   });
 
   afterAll(() => {
@@ -56,6 +66,7 @@ describe('Lambda Handler', () => {
 
   it('should return 404 if product is not found', async () => {
     const event = getEvent(crypto.randomUUID());
+    productRaw = null;
 
     ddbMock.resolvesOnce({});
     const result = await handler(event);
@@ -93,7 +104,7 @@ describe('Lambda Handler', () => {
     expect(JSON.parse(result.body).message).toBe('Transaction failed. Product not deleted.');
   });
 
-  it('should return 404 if product is not found', async () => {
+  it('should return 404 if product is not found (Transaction Exception)', async () => {
     const event = getEvent(crypto.randomUUID());
     const error = new Error('Conditional Check Failed');
     error.name = 'ConditionalCheckFailedException';
@@ -104,6 +115,7 @@ describe('Lambda Handler', () => {
     expect(result.statusCode).toBe(404);
     expect(JSON.parse(result.body)).toEqual({
       message: 'Product not found',
+      detailedMessage: 'Error: Conditional Check Failed',
     });
   });
 

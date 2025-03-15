@@ -4,6 +4,15 @@ import { APIGatewayProxyEvent } from 'aws-lambda';
 import { handler } from '../lambda/putProduct';
 import { getReservedId } from '../db/utils';
 import { HttpMethod } from '../lambda/@types';
+import { DEFAULT_CATEGORY } from '../lib/constants';
+
+const defaultProductRaw: { category: { S: string } } | null = {
+  category: { S: DEFAULT_CATEGORY },
+};
+let productRaw: typeof defaultProductRaw | null = defaultProductRaw;
+jest.mock('../lambda/common/getProduct.ts', () => ({
+  getProductRaw: jest.fn((_dbDocClient: DynamoDBDocumentClient, _productId: string) => productRaw),
+}));
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 
@@ -27,6 +36,7 @@ describe('Lambda Handler', () => {
 
   beforeEach(() => {
     ddbMock.reset();
+    productRaw = defaultProductRaw;
   });
 
   afterAll(() => {
@@ -47,6 +57,7 @@ describe('Lambda Handler', () => {
     const product = {
       id: crypto.randomUUID(),
       title: 'Test Product',
+      category: DEFAULT_CATEGORY,
       description: 'Test Description',
       price: 100,
       count: 10,
@@ -182,6 +193,7 @@ describe('Lambda Handler', () => {
     expect(result.statusCode).toBe(404);
     expect(JSON.parse(result.body)).toEqual({
       message: 'Product not found',
+      detailedMessage: 'Error: Conditional Check Failed',
     });
   });
 

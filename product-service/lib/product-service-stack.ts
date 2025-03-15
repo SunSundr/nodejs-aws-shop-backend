@@ -12,6 +12,7 @@ import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 import 'dotenv/config';
+import { DEFAULT_EMAIL } from './constants';
 
 export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -20,7 +21,8 @@ export class ProductServiceStack extends cdk.Stack {
     const httpMethod = cdk.aws_apigatewayv2.HttpMethod;
     const runtime = Runtime.NODEJS_22_X;
 
-    /// --------------------------------------------------------------
+    // SNS & SQS
+    // --------------------------------------------------------------
     const SUBSCRIPTION_EMAIL_DEFAULT = process.env.SUBSCRIPTION_EMAIL_DEFAULT;
     if (!SUBSCRIPTION_EMAIL_DEFAULT) {
       throw new Error('SUBSCRIPTION_EMAIL_DEFAULT is not defined');
@@ -58,7 +60,7 @@ export class ProductServiceStack extends cdk.Stack {
     });
 
     createProductTopic.addSubscription(
-      new EmailSubscription('alex_kov@list.ru', {
+      new EmailSubscription(DEFAULT_EMAIL, {
         filterPolicy: {
           price: SubscriptionFilter.numericFilter({
             between: { start: 100, stop: 10000 },
@@ -80,7 +82,7 @@ export class ProductServiceStack extends cdk.Stack {
       new PolicyStatement({
         actions: ['sns:Subscribe'],
         resources: [createProductTopic.topicArn],
-        principals: [new iam.ServicePrincipal('apigateway.amazonaws.com')], // new AccountPrincipal(PRINCIPAL_ID) ????
+        principals: [new iam.ServicePrincipal('apigateway.amazonaws.com')],
       }),
     );
 
@@ -124,7 +126,6 @@ export class ProductServiceStack extends cdk.Stack {
       },
       defaultCorsPreflightOptions: {
         allowOrigins: Cors.ALL_ORIGINS,
-        // allowHeaders: ['Content-Type'],
         // allowMethods: Cors.ALL_METHODS,
       },
     });

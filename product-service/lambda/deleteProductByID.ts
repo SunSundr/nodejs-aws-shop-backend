@@ -30,7 +30,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     console.error('Error deleting product:', error);
 
     if (error instanceof Error) {
-      if (error.name === 'ConditionalCheckFailedException') {
+      if (
+        error.name === 'ConditionalCheckFailedException' ||
+        error.name === 'CustomTransactionCanceled'
+      ) {
         return proxyResult(404, HttpMethod.DELETE, {
           message: 'Product not found',
           ...detailedMessage(error),
