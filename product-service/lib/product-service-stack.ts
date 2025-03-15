@@ -1,13 +1,17 @@
 import * as cdk from 'aws-cdk-lib';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as path from 'path';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { Cors, LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
-// import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { SubscriptionFilter, Topic } from 'aws-cdk-lib/aws-sns';
 import { DynamoDBTables } from '../db/tables';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
+import 'dotenv/config';
 
 export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -16,21 +20,92 @@ export class ProductServiceStack extends cdk.Stack {
     const httpMethod = cdk.aws_apigatewayv2.HttpMethod;
     const runtime = Runtime.NODEJS_22_X;
 
+    /// --------------------------------------------------------------
+    const SUBSCRIPTION_EMAIL_DEFAULT = process.env.SUBSCRIPTION_EMAIL_DEFAULT;
+    if (!SUBSCRIPTION_EMAIL_DEFAULT) {
+      throw new Error('SUBSCRIPTION_EMAIL_DEFAULT is not defined');
+    }
+
+    const deadLetterQueue = new sqs.Queue(this, 'DeadLetterQueue', {
+      queueName: 'DeadLetterQueue',
+    });
+
     const catalogItemsQueue = new sqs.Queue(this, 'ProductsQueue', {
       queueName: 'CatalogItemsQueue',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      //deliveryDelay: cdk.Duration.seconds(1),
+      receiveMessageWaitTime: cdk.Duration.seconds(5),
+      // visibilityTimeout: cdk.Duration.seconds(5),
+      deadLetterQueue: {
+        queue: deadLetterQueue,
+        maxReceiveCount: 3,
+      },
+    });
+
+    const createProductTopic = new Topic(this, 'CreateProductTopic', {
+      topicName: 'CreateProductTopic',
+      displayName: 'CreateProductTopic',
     });
 
     const catalogLambdaHandler = new NodejsFunction(this, 'CatalogBatchProcessLambda', {
       runtime,
       functionName: 'CatalogBatchProcess',
       entry: path.join(__dirname, '../lambda/catalogBatchProcess.ts'),
-      // environment: {
-      //   SQS_QUEUE_URL: catalogItemsQueue.queueUrl,
-      // },
+      environment: {
+        CREATE_PRODUCT_TOPIC_ARN: createProductTopic.topicArn,
+        SUBSCRIPTION_EMAIL_DEFAULT,
+      },
     });
 
-    catalogLambdaHandler.addEventSource(new SqsEventSource(catalogItemsQueue, { batchSize: 5 }));
+    createProductTopic.addSubscription(
+      new EmailSubscription('alex_kov@list.ru', {
+        filterPolicy: {
+          price: SubscriptionFilter.numericFilter({
+            between: { start: 100, stop: 10000 },
+          }),
+        },
+      }),
+    );
+
+    const subscriptionsLambdaHandler = new NodejsFunction(this, 'SubscriptionsLambda', {
+      runtime,
+      functionName: 'SubscriptionsLambda',
+      entry: path.join(__dirname, '../lambda/subscriptions.ts'),
+      environment: {
+        CREATE_PRODUCT_TOPIC_ARN: createProductTopic.topicArn,
+      },
+    });
+
+    createProductTopic.addToResourcePolicy(
+      new PolicyStatement({
+        actions: ['sns:Subscribe'],
+        resources: [createProductTopic.topicArn],
+        principals: [new iam.ServicePrincipal('apigateway.amazonaws.com')], // new AccountPrincipal(PRINCIPAL_ID) ????
+      }),
+    );
+
+    catalogLambdaHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['sns:ListSubscriptionsByTopic', 'sns:Publish'],
+        resources: [createProductTopic.topicArn],
+      }),
+    );
+
+    catalogLambdaHandler.addEventSource(
+      new SqsEventSource(catalogItemsQueue, {
+        batchSize: 5,
+        reportBatchItemFailures: true,
+        // maxBatchingWindow: cdk.Duration.seconds(20),
+      }),
+    );
+
+    createProductTopic.addSubscription(new EmailSubscription(SUBSCRIPTION_EMAIL_DEFAULT));
+    subscriptionsLambdaHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['sns:Subscribe'],
+        resources: [createProductTopic.topicArn],
+      }),
+    );
 
     new cdk.CfnOutput(this, 'CatalogItemsQueueUrlOutput', {
       value: catalogItemsQueue.queueUrl,
@@ -38,6 +113,8 @@ export class ProductServiceStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'CatalogItemsQueueArn', {
       value: catalogItemsQueue.queueArn,
     });
+
+    // --------------------------------------------------------------
 
     // API Gateway
     const api = new RestApi(this, 'ProductServiceAPI', {
@@ -47,6 +124,7 @@ export class ProductServiceStack extends cdk.Stack {
       },
       defaultCorsPreflightOptions: {
         allowOrigins: Cors.ALL_ORIGINS,
+        // allowHeaders: ['Content-Type'],
         // allowMethods: Cors.ALL_METHODS,
       },
     });
@@ -158,12 +236,14 @@ export class ProductServiceStack extends cdk.Stack {
     // API Gateway endpoints (products)
     const products = api.root.addResource('products');
     const product_id = products.addResource('{id}');
+    const product_subscribe = products.addResource('subscribe');
 
     products.addMethod(httpMethod.GET, new LambdaIntegration(productsLambda));
     product_id.addMethod(httpMethod.GET, new LambdaIntegration(productLambda));
     products.addMethod(httpMethod.PUT, new LambdaIntegration(putProductLambdaHandler));
     product_id.addMethod(httpMethod.DELETE, new LambdaIntegration(deleteProductByIdLambdaHandler));
     products.addMethod(httpMethod.POST, new LambdaIntegration(postProductLambdaHandler));
+    product_subscribe.addMethod(httpMethod.POST, new LambdaIntegration(subscriptionsLambdaHandler));
 
     // API Gateway endpoints (profile)
     const profile = api.root.addResource('profile');

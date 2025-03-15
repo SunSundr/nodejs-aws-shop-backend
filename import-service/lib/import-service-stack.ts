@@ -12,8 +12,8 @@ import {
   UPLOADED_KEY,
 } from './constants';
 import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
-import 'dotenv/config';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import 'dotenv/config';
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -82,7 +82,7 @@ export class ImportServiceStack extends cdk.Stack {
       functionName: 'ImportFileParser',
       entry: path.join(__dirname, './lambda/importFileParser.ts'),
       environment: {
-        SQS_QUEUE_URL: SQS_QUEUE_URL,
+        SQS_QUEUE_URL,
       },
     });
 

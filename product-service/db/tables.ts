@@ -12,12 +12,14 @@ export interface ProductServiceDatabaseProps {
     deleteProductByID: NodejsFunction;
     putProduct: NodejsFunction;
     catalogBatchProcess: NodejsFunction;
+    // subscriptions: NodejsFunction;
   };
 }
 
 export class DynamoDBTables extends Construct {
   public readonly productsTable: dynamodb.TableV2;
   public readonly stocksTable: dynamodb.TableV2;
+  // public readonly emailsTable: dynamodb.TableV2;
 
   constructor(scope: Construct, id: string, props: ProductServiceDatabaseProps) {
     super(scope, id);
@@ -28,7 +30,19 @@ export class DynamoDBTables extends Construct {
       deleteProductByID,
       putProduct,
       catalogBatchProcess,
+      // subscriptions,
     } = props.lambdas;
+
+    /* this.emailsTable = new dynamodb.TableV2(this, 'EmailsTable', {
+      tableName: EMAILS_TABLE_NAME,
+      partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
+      billing: dynamodb.Billing.onDemand(), // PAY_PER_REQUEST
+      encryption: dynamodb.TableEncryptionV2.awsManagedKey(), // DEFAULT encryption
+      tableClass: dynamodb.TableClass.STANDARD,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    this.emailsTable.grant(subscriptions, 'dynamodb:PutItem');
+    this.emailsTable.grant(catalogBatchProcess, 'dynamodb:GetItem'); */
 
     // Products table:
     this.productsTable = new dynamodb.TableV2(this, 'ProductsTable', {

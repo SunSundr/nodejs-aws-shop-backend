@@ -63,6 +63,7 @@ async function processFile(bucketName: string, objectKey: string, queueUrl: stri
 
   const stream = response.Body.pipe(csvParser({ strict: true }));
 
+  const rows: unknown[] = [];
   for await (const row of stream) {
     for (const key in row) {
       /* eslint-disable-next-line no-control-regex */
@@ -70,8 +71,9 @@ async function processFile(bucketName: string, objectKey: string, queueUrl: stri
         throw new Error(`Invalid characters found in row: ${row[key]}`);
       }
     }
-    await createSQSItem(queueUrl, row);
+    rows.push(row);
   }
+  await Promise.all(rows.map((row) => createSQSItem(queueUrl, row)));
 
   await withRetry(() =>
     moveFile(s3Client, bucketName, objectKey, getUniqObjectKey(objectKey, PARSED_KEY)),
