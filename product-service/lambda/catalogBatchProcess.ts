@@ -7,12 +7,11 @@ import { randomUUID } from 'crypto';
 import { createProduct } from './common/createProduct';
 import { notifySubscribers } from './common/notifySubscribers';
 
-const CREATE_PRODUCT_TOPIC_ARN = process.env.CREATE_PRODUCT_TOPIC_ARN;
-if (!CREATE_PRODUCT_TOPIC_ARN) {
-  throw new Error('CREATE_PRODUCT_TOPIC_ARN environment variable is not set');
-}
-
 export const handler = async (event: SQSEvent) => {
+  const CREATE_PRODUCT_TOPIC_ARN = process.env.CREATE_PRODUCT_TOPIC_ARN;
+  if (!CREATE_PRODUCT_TOPIC_ARN) {
+    throw new Error('CREATE_PRODUCT_TOPIC_ARN environment variable is not set');
+  }
   try {
     const productsMap = new Map<string, Product>();
     console.log('[INFO]', event.Records.length);
@@ -26,11 +25,13 @@ export const handler = async (event: SQSEvent) => {
           console.error('Error:', message || 'Product is undefined', body);
           continue;
         }
-        if (productsMap.has(product.id)) {
+
+        const mapId = `${product.id}-${product.title}`;
+        if (productsMap.has(mapId)) {
           console.warn(`Duplicate product found for ID: ${product.id}. Using the latest value.`);
         }
 
-        productsMap.set(`${product.id}-${product.title}`, product);
+        productsMap.set(mapId, product);
       } catch (error) {
         console.error('Error processing SQS record:', error);
       }

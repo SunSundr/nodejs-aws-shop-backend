@@ -15,10 +15,49 @@ jest.mock('../lambda/common/notifySubscribers');
 jest.mock('../db/client');
 jest.mock('crypto');
 
+interface FakeProduct {
+  id: string;
+  title: string;
+  price: number | string;
+  description: string;
+}
+
+const getRecord = (fakeProduct: FakeProduct, count = 1) => {
+  return new Array(count).fill({
+    body: JSON.stringify(fakeProduct),
+    messageId: '1',
+    receiptHandle: 'handle1',
+    attributes: {
+      ApproximateReceiveCount: '1',
+      SentTimestamp: '1633036800000',
+      SenderId: '123456789012',
+      ApproximateFirstReceiveTimestamp: '1633036800000',
+    },
+    messageAttributes: {},
+    md5OfBody: 'md5',
+    eventSource: 'aws:sqs',
+    eventSourceARN: 'arn:aws:sqs:region:account-id:queue-name',
+    awsRegion: 'region',
+  });
+};
+
+const getEvent = (
+  fakeProduct: {
+    id: string;
+    title: string;
+    price: number | string;
+    description: string;
+  },
+  count = 1,
+): SQSEvent => ({
+  Records: getRecord(fakeProduct, count),
+});
+
 describe('handler', () => {
   const consoleErrorSpy = jest.spyOn(globalThis.console, 'error').mockImplementation(() => {});
   const consoleLogSpy = jest.spyOn(globalThis.console, 'log').mockImplementation(() => {});
   const consoleWarnSpy = jest.spyOn(globalThis.console, 'warn').mockImplementation(() => {});
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -27,6 +66,22 @@ describe('handler', () => {
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
     consoleWarnSpy.mockRestore();
+  });
+
+  it('should throw an error if CREATE_PRODUCT_TOPIC_ARN is not set', async () => {
+    delete process.env.CREATE_PRODUCT_TOPIC_ARN;
+
+    await expect(
+      handler(
+        getEvent({
+          id: '123',
+          title: 'Test Product',
+          price: '100.00',
+          description: 'Test Description',
+        }),
+      ),
+    ).rejects.toThrow('CREATE_PRODUCT_TOPIC_ARN environment variable is not set');
+    process.env.CREATE_PRODUCT_TOPIC_ARN = 'arn:aws:sns:region:account-id:topic-name';
   });
 
   it('should process SQS records and create/update products', async () => {
@@ -42,38 +97,17 @@ describe('handler', () => {
 
     (updateProduct as jest.Mock).mockResolvedValue(undefined);
     (createProduct as jest.Mock).mockResolvedValue(undefined);
-
     (notifySubscribers as jest.Mock).mockResolvedValue(undefined);
-
     (randomUUID as jest.Mock).mockReturnValue('generated-uuid');
 
-    const event: SQSEvent = {
-      Records: [
-        {
-          body: JSON.stringify({
-            id: '123',
-            title: 'Test Product',
-            price: '100.00',
-            description: 'Test Description',
-          }),
-          messageId: '1',
-          receiptHandle: 'handle1',
-          attributes: {
-            ApproximateReceiveCount: '1',
-            SentTimestamp: '1633036800000',
-            SenderId: '123456789012',
-            ApproximateFirstReceiveTimestamp: '1633036800000',
-          },
-          messageAttributes: {},
-          md5OfBody: 'md5',
-          eventSource: 'aws:sqs',
-          eventSourceARN: 'arn:aws:sqs:region:account-id:queue-name',
-          awsRegion: 'region',
-        },
-      ],
-    };
-
-    await handler(event);
+    await handler(
+      getEvent({
+        id: '123',
+        title: 'Test Product',
+        price: '100.00',
+        description: 'Test Description',
+      }),
+    );
 
     expect(validateProduct).toHaveBeenCalledTimes(1);
     expect(updateProduct).toHaveBeenCalledWith(dbDocClient, {
@@ -96,105 +130,50 @@ describe('handler', () => {
   });
 
   it('should handle product creation if product ID is "none"', async () => {
+    const createResult = {
+      id: 'generated-uuid',
+      title: 'New Product',
+      price: '50.00',
+      description: 'New Description',
+    };
     (validateProduct as jest.Mock).mockReturnValue({
       product: { id: 'none', title: 'New Product', price: '50.00', description: 'New Description' },
       message: null,
     });
-
     (createProduct as jest.Mock).mockResolvedValue(undefined);
-
     (notifySubscribers as jest.Mock).mockResolvedValue(undefined);
 
-    const event: SQSEvent = {
-      Records: [
-        {
-          body: JSON.stringify({
-            id: 'none',
-            title: 'New Product',
-            price: '50.00',
-            description: 'New Description',
-          }),
-          messageId: '1',
-          receiptHandle: 'handle1',
-          attributes: {
-            ApproximateReceiveCount: '1',
-            SentTimestamp: '1633036800000',
-            SenderId: '123456789012',
-            ApproximateFirstReceiveTimestamp: '1633036800000',
-          },
-          messageAttributes: {},
-          md5OfBody: 'md5',
-          eventSource: 'aws:sqs',
-          eventSourceARN: 'arn:aws:sqs:region:account-id:queue-name',
-          awsRegion: 'region',
-        },
-      ],
-    };
-
-    await handler(event);
-
-    expect(createProduct).toHaveBeenCalledWith(
-      dbDocClient,
-      {
-        id: 'generated-uuid',
-        title: 'New Product',
-        price: '50.00',
-        description: 'New Description',
-      },
-      'generated-uuid',
+    await handler(
+      getEvent({
+        id: '123',
+        title: 'Test Product',
+        price: '100.00',
+        description: 'Test Description',
+      }),
     );
 
+    expect(createProduct).toHaveBeenCalledWith(dbDocClient, createResult, createResult.id);
     expect(notifySubscribers).toHaveBeenCalledWith(
-      {
-        id: 'generated-uuid',
-        title: 'New Product',
-        price: '50.00',
-        description: 'New Description',
-      },
+      createResult,
       process.env.CREATE_PRODUCT_TOPIC_ARN,
     );
   });
 
   it('should log errors for invalid products', async () => {
+    const body = {
+      id: 'invalid',
+      title: 'Invalid Product',
+      price: 'invalid',
+      description: 'Invalid Description',
+    };
     (validateProduct as jest.Mock).mockReturnValue({
       product: null,
       message: 'Invalid product data',
     });
 
-    const event: SQSEvent = {
-      Records: [
-        {
-          body: JSON.stringify({
-            id: 'invalid',
-            title: 'Invalid Product',
-            price: 'invalid',
-            description: 'Invalid Description',
-          }),
-          messageId: '1',
-          receiptHandle: 'handle1',
-          attributes: {
-            ApproximateReceiveCount: '1',
-            SentTimestamp: '1633036800000',
-            SenderId: '123456789012',
-            ApproximateFirstReceiveTimestamp: '1633036800000',
-          },
-          messageAttributes: {},
-          md5OfBody: 'md5',
-          eventSource: 'aws:sqs',
-          eventSourceARN: 'arn:aws:sqs:region:account-id:queue-name',
-          awsRegion: 'region',
-        },
-      ],
-    };
+    await handler(getEvent(body));
 
-    await handler(event);
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Error:', 'Invalid product data', {
-      id: 'invalid',
-      title: 'Invalid Product',
-      price: 'invalid',
-      description: 'Invalid Description',
-    });
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error:', 'Invalid product data', body);
   });
 
   it('should log errors for failed product processing', async () => {
@@ -207,40 +186,57 @@ describe('handler', () => {
       },
       message: null,
     });
-
     (updateProduct as jest.Mock).mockRejectedValue(new Error('Failed to update product'));
 
-    const event: SQSEvent = {
-      Records: [
-        {
-          body: JSON.stringify({
-            id: '123',
-            title: 'Test Product',
-            price: '100.00',
-            description: 'Test Description',
-          }),
-          messageId: '1',
-          receiptHandle: 'handle1',
-          attributes: {
-            ApproximateReceiveCount: '1',
-            SentTimestamp: '1633036800000',
-            SenderId: '123456789012',
-            ApproximateFirstReceiveTimestamp: '1633036800000',
-          },
-          messageAttributes: {},
-          md5OfBody: 'md5',
-          eventSource: 'aws:sqs',
-          eventSourceARN: 'arn:aws:sqs:region:account-id:queue-name',
-          awsRegion: 'region',
-        },
-      ],
-    };
-
-    await handler(event);
+    await handler(
+      getEvent({
+        id: 'invalid',
+        title: 'Invalid Product',
+        price: 'invalid',
+        description: 'Invalid Description',
+      }),
+    );
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       `Error processing product (ID: 123):`,
       expect.any(Error),
     );
+  });
+
+  it('should log a warning for duplicate products', async () => {
+    const product = {
+      id: '123',
+      title: 'Test Product',
+      price: '100.00',
+      description: 'Test Description',
+    };
+
+    (validateProduct as jest.Mock).mockReturnValue({
+      product,
+      message: null,
+    });
+
+    await handler(getEvent(product, 2));
+
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      `Duplicate product found for ID: ${product.id}. Using the latest value.`,
+    );
+  });
+
+  it('should log an error when processing an SQS record fails', async () => {
+    const invalidProduct = {
+      id: 'invalid',
+      title: 'Invalid Product',
+      price: 'invalid',
+      description: 'Invalid Description',
+    };
+
+    (validateProduct as jest.Mock).mockImplementation(() => {
+      throw new Error('Failed to validate product');
+    });
+
+    await handler(getEvent(invalidProduct));
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error processing SQS record:', expect.any(Error));
   });
 });
