@@ -1,5 +1,6 @@
 import { Product } from '../../db/types';
 import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';
+import { splitAndCleanText } from './splitAndCleanText';
 
 const snsClient = new SNSClient();
 
@@ -29,8 +30,9 @@ export const notifySubscribers = async (product: Product, topicArn: string) => {
           StringValue: Math.round(numericPrice).toString(),
         },
         keywords: {
-          DataType: 'String',
-          StringValue: `${product.title} ${product.description}`,
+          DataType: 'String.Array',
+          // splitAndCleanText(`${product.title} ${product.description}`);
+          StringValue: JSON.stringify(splitAndCleanText(product.title)),
         },
       },
     };
