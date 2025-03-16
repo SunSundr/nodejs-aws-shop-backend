@@ -1,4 +1,5 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { SQSClient } from '@aws-sdk/client-sqs';
 import { S3EventRecord, Context } from 'aws-lambda';
 import { Readable } from 'stream';
 import { sdkStreamMixin } from '@smithy/util-stream';
@@ -8,7 +9,11 @@ import { getUniqObjectKey } from '../lib/lambda/utils/getUniqObjectKey';
 import { withRetry } from '../lib/lambda/utils/withRetry';
 import { handler } from '../lib/lambda/importFileParser';
 
+const sqsQueueUrl = 'https://sqs.region.amazonaws.com/0000/Queue';
+process.env.SQS_QUEUE_URL = sqsQueueUrl;
 const s3Mock = mockClient(S3Client);
+const sqsMock = mockClient(SQSClient);
+
 type SdkReadableStream = ReturnType<typeof sdkStreamMixin>;
 
 jest.mock('../lib/lambda/utils/moveFile', () => ({
@@ -61,6 +66,7 @@ describe('importFileParser', () => {
 
   beforeEach(() => {
     s3Mock.reset();
+    sqsMock.onAnyCommand().resolves({});
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     jest.clearAllMocks();
@@ -69,6 +75,16 @@ describe('importFileParser', () => {
   afterEach(() => {
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
+  });
+
+  it('should throw an error if SQS_QUEUE_URL is not set', async () => {
+    delete process.env.SQS_QUEUE_URL;
+
+    const event = getS3Event();
+    await expect(handler(event, {} as Context)).rejects.toThrow(
+      'SQS_QUEUE_URL environment variable is not set',
+    );
+    process.env.SQS_QUEUE_URL = 'sqsQueueUrl';
   });
 
   it('should process a file successfully', async () => {
@@ -81,18 +97,13 @@ describe('importFileParser', () => {
 
     await handler(event, {} as Context);
 
-    expect(consoleLogSpy).toHaveBeenCalledWith('Parsed row:', {
-      name: 'Product 1',
-      description: 'Description 1',
-      price: '10.99',
-    });
     expect(moveFile).toHaveBeenCalledWith(
       expect.any(S3Client),
       'bucket',
       'uploaded/file.csv',
       'parsed/123_file.csv',
     );
-    expect(consoleLogSpy).toHaveBeenCalledWith('Parsing is ended');
+    expect(consoleLogSpy).toHaveBeenCalledWith('SQS item sent successfully');
   });
 
   it('should skip files not in the uploaded folder', async () => {
@@ -114,6 +125,19 @@ describe('importFileParser', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       ...standardErrorResult('uploaded/file.csv', 'bucket'),
     );
+  });
+
+  it('should handle errors when sending a message to SQS', async () => {
+    const sdkStream = getStream(`name,description,price\nProduct 1,Description 1,10.99`);
+    s3Mock.on(GetObjectCommand).resolves({ Body: sdkStream });
+    (getUniqObjectKey as jest.Mock).mockReturnValue('parsed/123_file.csv');
+    (moveFile as jest.Mock).mockResolvedValue({ status: true });
+    (withRetry as jest.Mock).mockImplementation((fn) => fn());
+    const event = getS3Event();
+    sqsMock.onAnyCommand().rejects(new Error('Failed to send message'));
+
+    await handler(event, {} as Context);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error sending SQS item:', expect.any(Error));
   });
 
   it('should handle errors when the response body is not readable', async () => {

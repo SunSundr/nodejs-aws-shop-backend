@@ -1,4 +1,3 @@
-process.env.CREATE_PRODUCT_TOPIC_ARN = 'arn:aws:sns:region:account-id:topic-name';
 import { handler } from '../lambda/catalogBatchProcess';
 import { SQSEvent } from 'aws-lambda';
 import { validateProduct } from '../lambda/common/validateProduct';
@@ -14,6 +13,9 @@ jest.mock('../lambda/common/createProduct');
 jest.mock('../lambda/common/notifySubscribers');
 jest.mock('../db/client');
 jest.mock('crypto');
+
+const createProductTopicArn = 'arn:aws:sns:region:account-id:topic-name';
+process.env.CREATE_PRODUCT_TOPIC_ARN = createProductTopicArn;
 
 interface FakeProduct {
   id: string;
@@ -81,7 +83,7 @@ describe('handler', () => {
         }),
       ),
     ).rejects.toThrow('CREATE_PRODUCT_TOPIC_ARN environment variable is not set');
-    process.env.CREATE_PRODUCT_TOPIC_ARN = 'arn:aws:sns:region:account-id:topic-name';
+    process.env.CREATE_PRODUCT_TOPIC_ARN = createProductTopicArn;
   });
 
   it('should process SQS records and create/update products', async () => {

@@ -24,15 +24,18 @@ const getEvent = (fileName: string | null = 'test.csv') =>
 
 describe('importProductsFile', () => {
   let consoleErrorSpy: jest.SpyInstance;
+  let consoleLogSpy: jest.SpyInstance;
 
   beforeEach(() => {
     s3Mock.reset();
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     jest.clearAllMocks();
   });
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
+    consoleLogSpy.mockRestore();
   });
 
   it('should generate a signed URL successfully', async () => {
