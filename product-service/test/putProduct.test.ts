@@ -72,6 +72,25 @@ describe('Lambda Handler', () => {
     expect(responseBody).toMatchObject(product);
   });
 
+  it('should return 200 if product is successfully updated with category', async () => {
+    const product = {
+      id: crypto.randomUUID(),
+      title: 'Test Product',
+      category: 'NEW CATEGORY',
+      description: 'Test Description',
+      price: 100,
+      count: 10,
+    };
+    const event = getEvent(JSON.stringify(product));
+    ddbMock.resolvesOnce({});
+
+    const result = await handler(event);
+
+    expect(result.statusCode).toBe(200);
+    const responseBody = JSON.parse(result.body);
+    expect(responseBody).toMatchObject(product);
+  });
+
   it('should remove imageURL when empty string is provided', async () => {
     const event = getEvent(
       JSON.stringify({

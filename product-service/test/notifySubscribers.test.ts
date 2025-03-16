@@ -48,7 +48,7 @@ describe('notifySubscribers', () => {
             StringValue: expect.any(String),
           }),
           keywords: expect.objectContaining({
-            DataType: 'String',
+            DataType: 'String.Array',
             StringValue: expect.any(String),
           }),
         }),

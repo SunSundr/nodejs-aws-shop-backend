@@ -174,6 +174,12 @@ describe('handler', () => {
     await handler(getEvent(body));
 
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error:', 'Invalid product data', body);
+
+    (validateProduct as jest.Mock).mockReturnValue({});
+
+    await handler(getEvent(body));
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error:', 'Product is undefined', body);
   });
 
   it('should log errors for failed product processing', async () => {
