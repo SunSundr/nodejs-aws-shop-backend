@@ -11,8 +11,8 @@ import { DynamoDBTables } from '../db/tables';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
+import { BATCH_SIZE, DEFAULT_EMAIL } from './constants';
 import 'dotenv/config';
-import { DEFAULT_EMAIL } from './constants';
 
 export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -36,7 +36,7 @@ export class ProductServiceStack extends cdk.Stack {
       queueName: 'CatalogItemsQueue',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       //deliveryDelay: cdk.Duration.seconds(1),
-      receiveMessageWaitTime: cdk.Duration.seconds(5),
+      // receiveMessageWaitTime: cdk.Duration.seconds(5),
       // visibilityTimeout: cdk.Duration.seconds(5),
       deadLetterQueue: {
         queue: deadLetterQueue,
@@ -53,6 +53,7 @@ export class ProductServiceStack extends cdk.Stack {
       runtime,
       functionName: 'CatalogBatchProcess',
       entry: path.join(__dirname, '../lambda/catalogBatchProcess.ts'),
+      timeout: cdk.Duration.seconds(10),
       environment: {
         CREATE_PRODUCT_TOPIC_ARN: createProductTopic.topicArn,
         SUBSCRIPTION_EMAIL_DEFAULT,
@@ -95,7 +96,7 @@ export class ProductServiceStack extends cdk.Stack {
 
     catalogLambdaHandler.addEventSource(
       new SqsEventSource(catalogItemsQueue, {
-        batchSize: 5,
+        batchSize: BATCH_SIZE,
         reportBatchItemFailures: true,
         // maxBatchingWindow: cdk.Duration.seconds(20),
       }),

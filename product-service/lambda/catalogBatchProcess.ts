@@ -13,7 +13,8 @@ export const handler = async (event: SQSEvent) => {
     throw new Error('CREATE_PRODUCT_TOPIC_ARN environment variable is not set');
   }
 
-  const productsMap = new Map<string, Product>();
+  const failedMessageIds: string[] = [];
+  const productsMap = new Map<string, [Product, string]>();
   console.log('[INFO]', event.Records.length);
   for (const record of event.Records) {
     try {
@@ -31,14 +32,18 @@ export const handler = async (event: SQSEvent) => {
         console.warn(`Duplicate product found for ID: ${product.id}. Using the latest value.`);
       }
 
-      productsMap.set(mapId, product);
+      productsMap.set(mapId, [product, record.messageId]);
     } catch (error) {
       console.error('Error processing SQS record:', error);
+      failedMessageIds.push(record.messageId);
     }
   }
 
   await Promise.all(
-    Array.from(productsMap.values()).map(async (product) => {
+    Array.from(productsMap.values()).map(async (data) => {
+      const [product, messageId] = data;
+      if (failedMessageIds.includes(messageId)) return;
+
       try {
         if (product.id === 'none') {
           product.id = randomUUID();
@@ -49,10 +54,17 @@ export const handler = async (event: SQSEvent) => {
           console.log(`Product updated with ID: ${product.id}`);
         }
 
-        await notifySubscribers(product, CREATE_PRODUCT_TOPIC_ARN);
+        await notifySubscribers(product, CREATE_PRODUCT_TOPIC_ARN); // - does not cause errors
       } catch (error) {
         console.error(`Error processing product (ID: ${product.id}):`, error);
+        failedMessageIds.push(messageId);
       }
     }),
   );
+
+  return {
+    batchItemFailures: failedMessageIds.map((id) => ({
+      itemIdentifier: id,
+    })),
+  };
 };
