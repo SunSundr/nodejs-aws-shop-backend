@@ -1,5 +1,5 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { SQSClient } from '@aws-sdk/client-sqs';
+import { BatchResultErrorEntry, SendMessageBatchResultEntry, SQSClient } from '@aws-sdk/client-sqs';
 import { S3EventRecord, Context } from 'aws-lambda';
 import { Readable } from 'stream';
 import { sdkStreamMixin } from '@smithy/util-stream';
@@ -93,6 +93,8 @@ describe('importFileParser', () => {
     (getUniqObjectKey as jest.Mock).mockReturnValue('parsed/123_file.csv');
     (moveFile as jest.Mock).mockResolvedValue({ status: true });
     (withRetry as jest.Mock).mockImplementation((fn) => fn());
+    const batchResult = { Successful: { length: 1 } as SendMessageBatchResultEntry[] };
+    sqsMock.onAnyCommand().resolves(batchResult);
     const event = getS3Event();
 
     await handler(event, {} as Context);
@@ -103,7 +105,11 @@ describe('importFileParser', () => {
       'uploaded/file.csv',
       'parsed/123_file.csv',
     );
-    expect(consoleLogSpy).toHaveBeenCalledWith('SQS item sent successfully');
+
+    expect(consoleLogSpy).toHaveBeenLastCalledWith(
+      'Messages sent successfully:',
+      batchResult.Successful,
+    );
   });
 
   it('should skip files not in the uploaded folder', async () => {
@@ -134,10 +140,27 @@ describe('importFileParser', () => {
     (moveFile as jest.Mock).mockResolvedValue({ status: true });
     (withRetry as jest.Mock).mockImplementation((fn) => fn());
     const event = getS3Event();
-    sqsMock.onAnyCommand().rejects(new Error('Failed to send message'));
+    sqsMock.onAnyCommand().rejects(new Error('Failed to send batch'));
 
     await handler(event, {} as Context);
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Error sending SQS item:', expect.any(Error));
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error sending batch:', expect.any(Error));
+  });
+
+  it('should be the error message when sending to SQS', async () => {
+    const sdkStream = getStream(`name,description,price\nProduct 1,Description 1,10.99`);
+    s3Mock.on(GetObjectCommand).resolves({ Body: sdkStream });
+    (getUniqObjectKey as jest.Mock).mockReturnValue('parsed/123_file.csv');
+    (moveFile as jest.Mock).mockResolvedValue({ status: true });
+    (withRetry as jest.Mock).mockImplementation((fn) => fn());
+    const event = getS3Event();
+    const batchResult = { Failed: { length: 1 } as BatchResultErrorEntry[] };
+    sqsMock.onAnyCommand().resolves(batchResult);
+
+    await handler(event, {} as Context);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Some messages failed to send:',
+      batchResult.Failed,
+    );
   });
 
   it('should handle errors when the response body is not readable', async () => {
@@ -166,7 +189,6 @@ describe('importFileParser', () => {
   it('should handle errors when moving file', async () => {
     const sdkStream = getStream(`name,description,price\nProduct 1,Description 1,10.99`);
     s3Mock.on(GetObjectCommand).resolves({ Body: sdkStream });
-    // s3Mock.onAnyCommand().rejects(new Error('Failed to move file'));
     (moveFile as jest.Mock).mockRejectedValue(new Error('Failed to move file'));
     (withRetry as jest.Mock).mockImplementation((fn) => fn());
 

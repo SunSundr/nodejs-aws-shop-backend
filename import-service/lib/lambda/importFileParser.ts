@@ -1,12 +1,13 @@
 import { S3Event, Context, S3EventRecord } from 'aws-lambda';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { SendMessageBatchCommand, SQSClient } from '@aws-sdk/client-sqs';
+import { randomUUID } from 'crypto';
 import { Readable } from 'stream';
 import csvParser from 'csv-parser';
-import { FAILED_KEY, PARSED_KEY, UPLOADED_KEY } from '../constants';
+import { BATCH_SIZE, FAILED_KEY, PARSED_KEY, UPLOADED_KEY } from '../constants';
 import { getUniqObjectKey } from './utils/getUniqObjectKey';
 import { moveFile } from './utils/moveFile';
 import { withRetry } from './utils/withRetry';
-import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 
 const s3Client = new S3Client();
 const sqsClient = new SQSClient();
@@ -27,21 +28,41 @@ export const handler = async (event: S3Event, _context: Context): Promise<void> 
   );
 };
 
-export const createSQSItem = async (queueUrl: string, data: unknown) => {
-  console.log('Creating SQS item:', data);
+export const createSQSItems = async (queueUrl: string, data: unknown[]) => {
+  console.log('Creating SQS items batch:', data);
 
-  const sqsSendMessage = new SendMessageCommand({
-    QueueUrl: queueUrl,
-    MessageBody: JSON.stringify(data),
-  });
+  const sqsSendMessageBatchs: SendMessageBatchCommand[] = [];
 
-  try {
-    await sqsClient.send(sqsSendMessage);
-    console.log('SQS item sent successfully');
-  } catch (err) {
-    console.error('Error sending SQS item:', err);
-    throw err;
+  for (let i = 0; i < data.length; i += BATCH_SIZE) {
+    const batch = data.slice(i, i + BATCH_SIZE);
+
+    const sqsSendMessageBatch = new SendMessageBatchCommand({
+      QueueUrl: queueUrl,
+      Entries: batch.map((item) => ({
+        Id: randomUUID(),
+        MessageBody: JSON.stringify(item),
+      })),
+    });
+
+    sqsSendMessageBatchs.push(sqsSendMessageBatch);
   }
+  await Promise.all(
+    sqsSendMessageBatchs.map(async (batchCommand) => {
+      return sqsClient
+        .send(batchCommand)
+        .then((response) => {
+          if (response.Failed && response.Failed.length > 0) {
+            console.error('Some messages failed to send:', response.Failed);
+          } else if (response.Successful && response.Successful.length > 0) {
+            console.log('Messages sent successfully:', response.Successful);
+          }
+          return response;
+        })
+        .catch((err) => {
+          console.error('Error sending batch:', err);
+        });
+    }),
+  );
 };
 
 async function processFile(bucketName: string, objectKey: string, queueUrl: string): Promise<void> {
@@ -73,7 +94,7 @@ async function processFile(bucketName: string, objectKey: string, queueUrl: stri
     }
     rows.push(row);
   }
-  await Promise.all(rows.map((row) => createSQSItem(queueUrl, row)));
+  await createSQSItems(queueUrl, rows);
 
   await withRetry(() =>
     moveFile(s3Client, bucketName, objectKey, getUniqObjectKey(objectKey, PARSED_KEY)),
