@@ -13,7 +13,7 @@ async function clearTable(tableName: string) {
         TableName: tableName,
         Key:
           tableName === PRODUCTS_TABLE_NAME
-            ? { id: item.id, title: item.title }
+            ? { id: item.id, category: item.category }
             : { product_id: item.product_id },
       });
       await dbDocClient.send(deleteCommand);

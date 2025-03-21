@@ -11,3 +11,4 @@ export const ALLOWED_ORIGINS = [
   'http://localhost:4173', // vite prod server
   'http://localhost:5173', // vite dev server
 ];
+export const BATCH_SIZE = 5;

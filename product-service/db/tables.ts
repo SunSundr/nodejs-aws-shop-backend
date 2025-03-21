@@ -11,6 +11,7 @@ export interface ProductServiceDatabaseProps {
     postProduct: NodejsFunction;
     deleteProductByID: NodejsFunction;
     putProduct: NodejsFunction;
+    catalogBatchProcess: NodejsFunction;
   };
 }
 
@@ -20,25 +21,54 @@ export class DynamoDBTables extends Construct {
 
   constructor(scope: Construct, id: string, props: ProductServiceDatabaseProps) {
     super(scope, id);
-    const { getProductsList, getProductByID, postProduct, deleteProductByID, putProduct } =
-      props.lambdas;
+    const {
+      getProductsList,
+      getProductByID,
+      postProduct,
+      deleteProductByID,
+      putProduct,
+      catalogBatchProcess,
+    } = props.lambdas;
 
     // Products table:
     this.productsTable = new dynamodb.TableV2(this, 'ProductsTable', {
       tableName: PRODUCTS_TABLE_NAME,
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'title', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'category', type: dynamodb.AttributeType.STRING },
       billing: dynamodb.Billing.onDemand(), // PAY_PER_REQUEST
       encryption: dynamodb.TableEncryptionV2.awsManagedKey(), // DEFAULT encryption
       tableClass: dynamodb.TableClass.STANDARD,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    this.productsTable.grantReadData(getProductByID);
-    this.productsTable.grantReadData(getProductsList);
-    this.productsTable.grantWriteData(postProduct);
-    this.productsTable.grantReadWriteData(deleteProductByID);
-    this.productsTable.grantWriteData(putProduct);
+    this.productsTable.grant(getProductByID, 'dynamodb:Query');
+    this.productsTable.grant(getProductsList, 'dynamodb:Scan');
+    this.productsTable.grant(
+      postProduct,
+      'dynamodb:Query',
+      'dynamodb:TransactWriteItems',
+      'dynamodb:PutItem',
+    );
+    this.productsTable.grant(
+      deleteProductByID,
+      'dynamodb:Query',
+      'dynamodb:TransactWriteItems',
+      'dynamodb:DeleteItem',
+    );
+    this.productsTable.grant(
+      putProduct,
+      'dynamodb:Query',
+      'dynamodb:TransactWriteItems',
+      'dynamodb:UpdateItem',
+    );
+
+    this.productsTable.grant(
+      catalogBatchProcess,
+      'dynamodb:Query',
+      'dynamodb:TransactWriteItems',
+      'dynamodb:PutItem',
+      'dynamodb:UpdateItem',
+    );
 
     // Stocks table:
     this.stocksTable = new dynamodb.TableV2(this, 'StocksTable', {
@@ -55,10 +85,16 @@ export class DynamoDBTables extends Construct {
       partitionKey: { name: 'product_id', type: dynamodb.AttributeType.STRING },
     });
 
-    this.stocksTable.grantReadData(getProductByID);
-    this.stocksTable.grantReadData(getProductsList);
-    this.stocksTable.grantWriteData(postProduct);
-    this.stocksTable.grantReadWriteData(deleteProductByID);
-    this.stocksTable.grantWriteData(putProduct);
+    this.stocksTable.grant(getProductByID, 'dynamodb:GetItem');
+    this.stocksTable.grant(getProductsList, 'dynamodb:Scan');
+    this.stocksTable.grant(postProduct, 'dynamodb:TransactWriteItems', 'dynamodb:PutItem');
+    this.stocksTable.grant(deleteProductByID, 'dynamodb:TransactWriteItems', 'dynamodb:DeleteItem');
+    this.stocksTable.grant(putProduct, 'dynamodb:TransactWriteItems', 'dynamodb:UpdateItem');
+    this.stocksTable.grant(
+      catalogBatchProcess,
+      'dynamodb:TransactWriteItems',
+      'dynamodb:PutItem',
+      'dynamodb:UpdateItem',
+    );
   }
 }

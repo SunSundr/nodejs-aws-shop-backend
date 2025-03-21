@@ -60,6 +60,41 @@ describe('Lambda Handler', () => {
     expect(JSON.parse(result.body).message).toBe('Invalid input data');
   });
 
+  it('should return 400 if price or count are represented as empty strings', async () => {
+    const event = getEvent(
+      JSON.stringify({
+        title: 'Test Product',
+        description: 'Test Description',
+        price: '',
+        count: '',
+        imageURL: 'https://image.url',
+      }),
+    );
+
+    const result = await handler(event);
+
+    expect(result.statusCode).toBe(400);
+    expect(JSON.parse(result.body).message).toBe('Invalid input data');
+  });
+
+  it('should return 400 if category format is invalid', async () => {
+    const event = getEvent(
+      JSON.stringify({
+        title: 'Test Product',
+        description: 'Test Description',
+        price: 100,
+        count: 10,
+        imageURL: 'https://image.url',
+        category: true, // invalid format
+      }),
+    );
+
+    const result = await handler(event);
+
+    expect(result.statusCode).toBe(400);
+    expect(JSON.parse(result.body).message).toBe('Invalid category format');
+  });
+
   it('should return 400 if count or price is negative', async () => {
     const event = getEvent(
       JSON.stringify({
@@ -129,6 +164,24 @@ describe('Lambda Handler', () => {
     expect(responseBody.price).toBe(100);
     expect(responseBody.count).toBe(10);
     expect(responseBody.imageURL).toBeUndefined();
+  });
+
+  it('should return 201 if the product is successfully created and its price and count are represented as strings.', async () => {
+    const bodyWithoutImage = JSON.stringify({
+      title: 'Test Product',
+      description: 'Test Description',
+      price: '100',
+      count: '10',
+    });
+    const event = getEvent(bodyWithoutImage);
+    ddbMock.resolvesOnce({});
+
+    const result = await handler(event);
+
+    expect(result.statusCode).toBe(201);
+    const responseBody = JSON.parse(result.body);
+    expect(responseBody.price).toBe(100);
+    expect(responseBody.count).toBe(10);
   });
 
   it('should return 400 if transaction fails', async () => {
