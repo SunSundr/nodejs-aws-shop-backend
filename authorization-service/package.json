@@ -5,12 +5,21 @@
     "authorization-service": "bin/authorization-service.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "rimraf dist && tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "test:coverage": "jest --coverage",
+    "cdk": "cdk",
+    "cdk:bootstrap": "cdk bootstrap",
+    "cdk:deploy": "npm run build && cdk deploy",
+    "cdk:destroy": "cdk destroy",
+    "cdk:diff": "npm run build && cdk diff",
+    "cdk:synth": "npm run build && cdk synth",
+    "lint": "eslint . --fix",
+    "prettier": "prettier . --write"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.147",
     "@types/jest": "^29.5.14",
     "@types/node": "22.7.9",
     "aws-cdk": "2.1005.0",
@@ -27,6 +36,7 @@
   },
   "dependencies": {
     "aws-cdk-lib": "2.181.1",
-    "constructs": "^10.0.0"
+    "constructs": "^10.0.0",
+    "dotenv": "^16.4.7"
   }
 }
