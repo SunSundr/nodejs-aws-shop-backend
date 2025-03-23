@@ -6,7 +6,7 @@ import { AccessMessage, Effect } from './@types';
 export const handler = async (
   event: APIGatewayTokenAuthorizerEvent,
 ): Promise<APIGatewayAuthorizerResult> => {
-  console.log('Event: ', JSON.stringify(event));
+  console.log('Event:', JSON.stringify(event));
 
   try {
     const [, token] = event.authorizationToken.split(' ');
