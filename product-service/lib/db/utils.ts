@@ -1,4 +1,4 @@
-import { RESERVED_ID_PREFIX } from '../lib/constants';
+import { RESERVED_ID_PREFIX } from '../../lib/constants';
 
 export const isReservedId = (id: string): boolean => {
   if (!id.startsWith(RESERVED_ID_PREFIX) || id.length !== RESERVED_ID_PREFIX.length + 2) {

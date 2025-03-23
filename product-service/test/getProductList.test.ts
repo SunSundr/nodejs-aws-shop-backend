@@ -1,11 +1,11 @@
-import { handler } from '../lambda/getProductList';
+import { handler } from '../lib/lambda/getProductList';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { mockClient } from 'aws-sdk-client-mock';
 import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../lib/constants';
-import { Stock } from '../db/types';
-import { getProductsWithoutCount, getStock, products } from '../db/data';
-import { HttpMethod } from '../lambda/@types';
+import { Stock } from '../lib/db/types';
+import { getProductsWithoutCount, getStock, products } from '../lib/db/data';
+import { HttpMethod } from '../lib/lambda/@types';
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 

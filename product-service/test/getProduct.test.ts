@@ -1,15 +1,15 @@
 import { mockClient } from 'aws-sdk-client-mock';
 import { DynamoDBDocumentClient, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { QueryCommand as QueryCommandClient } from '@aws-sdk/client-dynamodb';
-import { getProduct, getProductRaw } from '../lambda/common/getProduct';
-import { getItem } from '../lambda/common/getItem';
+import { getProduct, getProductRaw } from '../lib/lambda/common/getProduct';
+import { getItem } from '../lib/lambda/common/getItem';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 const dbClient = new DynamoDBClient();
 const dbDocClient = DynamoDBDocumentClient.from(dbClient);
 
-jest.mock('../lambda/common/getItem', () => ({
+jest.mock('../lib/lambda/common/getItem', () => ({
   getItem: jest.fn(),
 }));
 

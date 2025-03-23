@@ -7,7 +7,7 @@ import { Cors, LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { SubscriptionFilter, Topic } from 'aws-cdk-lib/aws-sns';
-import { DynamoDBTables } from '../db/tables';
+import { DynamoDBTables } from './db/tables';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
