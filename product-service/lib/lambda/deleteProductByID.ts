@@ -10,6 +10,11 @@ import { deleteProduct } from './common/deleteProduct';
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log(formatLog(event.httpMethod, event.path, event));
 
+  //const claims = event.requestContext?.authorizer?.claims;
+  // if (!claims) {
+  //   return proxyResult(401, HttpMethod.DELETE, { message: 'Unauthorized' });
+  // }
+
   const productId = event.pathParameters?.id;
   const category = event.queryStringParameters?.category;
 

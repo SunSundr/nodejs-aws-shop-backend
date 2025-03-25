@@ -12,3 +12,9 @@ export const ALLOWED_ORIGINS = [
   'http://localhost:5173', // vite dev server
 ];
 export const BATCH_SIZE = 5;
+export const RESPONSE_ERROR_HEADERS = {
+  'Access-Control-Allow-Origin': "'*'",
+  'Access-Control-Allow-Headers':
+    "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+  'Access-Control-Allow-Methods': "'GET,OPTIONS'",
+};

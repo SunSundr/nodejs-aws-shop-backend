@@ -4,7 +4,7 @@ import { proxyResult } from './@proxyResult';
 import { formatLog } from './@formatLogs';
 import { errorResult } from './@errorResult';
 import { dbDocClient } from '../db/client';
-import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../lib/constants';
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../../lib/constants';
 import { Product, Stock } from '../db/types';
 import { HttpMethod } from './@types';
 

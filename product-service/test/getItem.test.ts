@@ -1,5 +1,5 @@
 import { AttributeValue } from '@aws-sdk/client-dynamodb';
-import { getItem } from '../lambda/common/getItem';
+import { getItem } from '../lib/lambda/common/getItem';
 
 describe('getItem', () => {
   it('should return the first item if array has one element', () => {

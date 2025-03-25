@@ -1,4 +1,4 @@
-import { DEFAULT_CATEGORY } from '../lib/constants';
+import { DEFAULT_CATEGORY } from '../../lib/constants';
 
 export interface Product {
   id: string;

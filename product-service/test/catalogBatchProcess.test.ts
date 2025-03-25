@@ -1,17 +1,17 @@
-import { handler } from '../lambda/catalogBatchProcess';
+import { handler } from '../lib/lambda/catalogBatchProcess';
 import { SQSEvent } from 'aws-lambda';
-import { validateProduct } from '../lambda/common/validateProduct';
-import { updateProduct } from '../lambda/common/updateProduct';
-import { createProduct } from '../lambda/common/createProduct';
-import { notifySubscribers } from '../lambda/common/notifySubscribers';
-import { dbDocClient } from '../db/client';
+import { validateProduct } from '../lib/lambda/common/validateProduct';
+import { updateProduct } from '../lib/lambda/common/updateProduct';
+import { createProduct } from '../lib/lambda/common/createProduct';
+import { notifySubscribers } from '../lib/lambda/common/notifySubscribers';
+import { dbDocClient } from '../lib/db/client';
 import { randomUUID } from 'crypto';
 
-jest.mock('../lambda/common/validateProduct');
-jest.mock('../lambda/common/updateProduct');
-jest.mock('../lambda/common/createProduct');
-jest.mock('../lambda/common/notifySubscribers');
-jest.mock('../db/client');
+jest.mock('../lib/lambda/common/validateProduct');
+jest.mock('../lib/lambda/common/updateProduct');
+jest.mock('../lib/lambda/common/createProduct');
+jest.mock('../lib/lambda/common/notifySubscribers');
+jest.mock('../lib/db/client');
 jest.mock('crypto');
 
 const createProductTopicArn = 'arn:aws:sns:region:account-id:topic-name';

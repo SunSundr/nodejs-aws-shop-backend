@@ -8,8 +8,8 @@ The repository is organized as follows:
 
 ```
 ├── product-service/       # Under Development
-├── import-service/        # Not yet implemented / Planned
-├── authorization-service/ # Not yet implemented / Planned
+├── import-service/        # Under Development
+├── authorization-service/ # Under Development
 ├── cart-service/          # Not yet implemented / Planned
 └── README.md              # This main README file
 ```

@@ -1,5 +1,5 @@
-import { Product } from '../db/types';
-import { notifySubscribers } from '../lambda/common/notifySubscribers';
+import { Product } from '../lib/db/types';
+import { notifySubscribers } from '../lib/lambda/common/notifySubscribers';
 import { PublishCommand } from '@aws-sdk/client-sns';
 import { DEFAULT_CATEGORY } from '../lib/constants';
 

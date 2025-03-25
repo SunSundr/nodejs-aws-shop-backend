@@ -1,7 +1,7 @@
 import { TransactWriteItem, TransactWriteItemsCommand } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocument, DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { Product } from '../../db/types';
-import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../../lib/constants';
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../../constants';
 import { getProductRaw } from './getProduct';
 import { deleteProductTransactionItems } from './deleteProduct';
 import { createProductTransactionItems } from './createProduct';
