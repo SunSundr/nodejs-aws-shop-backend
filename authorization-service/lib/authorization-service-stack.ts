@@ -4,6 +4,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
+import { CognitoStack } from './cognito/cognito-stack';
 import { TEST_USER_ENV_KEY } from './constants';
 import 'dotenv/config';
 
@@ -15,6 +16,8 @@ export class AuthorizationServiceStack extends cdk.Stack {
     if (!testUserPassword) {
       throw new Error(`"${TEST_USER_ENV_KEY}" environment is not defined`);
     }
+
+    new CognitoStack(this, 'CognitoStack');
 
     const basicAuthorizerLambda = new NodejsFunction(this, 'BasicAuthorizerLambda', {
       runtime: Runtime.NODEJS_22_X,
