@@ -13,14 +13,15 @@ export class CognitoStack extends Construct {
   constructor(scope: Construct, id: string) {
     super(scope, id);
 
-    const logoutUrls = Array.from(
+    const baseUrls = Array.from(
       new Set([
         ...CALLBACK_URLS.map((url) => url.trim().toLowerCase()),
         cdk.Fn.importValue(CLOUDFRONT_DOMAIN_NAME).trim().toLowerCase(),
       ]),
     ).map((url) => (url.startsWith('http') ? url : `https://${url}`));
 
-    const callbackUrls = logoutUrls.map((url) => `${url}/login`);
+    const callbackUrls = baseUrls.map((url) => `${url}/login`);
+    const logoutUrls = baseUrls.map((url) => `${url}/logout`);
 
     this.userPool = new cognito.UserPool(this, 'StoreUserPool', {
       userPoolName: 'StoreUserPool',
