@@ -1,4 +1,4 @@
-import { DEFAULT_CATEGORY } from '../lib/constants';
+import { DEFAULT_CATEGORY } from '../../lib/constants';
 import { Product, ProductCategory, Stock } from './types';
 import { cleanString, getReservedId, randomCount } from './utils';
 

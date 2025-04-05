@@ -5,7 +5,7 @@ import { proxyResult } from './@proxyResult';
 import { errorResult } from './@errorResult';
 import { Product, Stock } from '../db/types';
 import { formatLog } from './@formatLogs';
-import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../lib/constants';
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../constants';
 import { HttpMethod } from './@types';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {

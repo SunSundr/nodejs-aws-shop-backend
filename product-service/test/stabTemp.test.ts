@@ -1,9 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { getHeaders } from '../lambda/@headers';
-import { cart, orders } from '../lambda/@mockData';
-import { HttpMethod } from '../lambda/@types';
+import { getHeaders } from '../lib/lambda/@headers';
+import { cart, orders } from '../lib/lambda/@mockData';
+import { HttpMethod } from '../lib/lambda/@types';
 
-jest.mock('../lambda/@headers', () => ({
+jest.mock('../lib/lambda/@headers', () => ({
   getHeaders: jest.fn((methods: HttpMethod[]) => ({
     'Access-Control-Allow-Methods': methods.join(','),
     'Access-Control-Allow-Origin': HttpMethod.ANY,
@@ -23,7 +23,7 @@ stubFiles.forEach((file) => {
   describe(`Lambda Handler (${file[0]})`, () => {
     let handler: (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>;
     beforeAll(async () => {
-      handler = (await import(`../lambda/${file[0]}`)).handler;
+      handler = (await import(`../lib/lambda/${file[0]}`)).handler;
     });
     beforeEach(() => {
       jest.clearAllMocks();
@@ -47,7 +47,7 @@ stubFiles.forEach((file) => {
 describe('Lambda Handler (putProfileCart.ts)', () => {
   let handler: (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>;
   beforeAll(async () => {
-    handler = (await import('../lambda/putProfileCart')).handler;
+    handler = (await import('../lib/lambda/putProfileCart')).handler;
   });
 
   beforeEach(() => {
@@ -85,7 +85,7 @@ describe('Lambda Handler (putProfileCart.ts)', () => {
 describe('Lambda Handler (getOrderById.ts)', () => {
   let handler: (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>;
   beforeAll(async () => {
-    handler = (await import('../lambda/getOrderById')).handler;
+    handler = (await import('../lib/lambda/getOrderById')).handler;
   });
 
   beforeEach(() => {

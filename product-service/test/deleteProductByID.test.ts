@@ -1,16 +1,16 @@
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { APIGatewayProxyEvent } from 'aws-lambda';
-import { handler } from '../lambda/deleteProductByID';
-import { HttpMethod } from '../lambda/@types';
-import { getReservedId } from '../db/utils';
+import { handler } from '../lib/lambda/deleteProductByID';
+import { HttpMethod } from '../lib/lambda/@types';
+import { getReservedId } from '../lib/db/utils';
 import { DEFAULT_CATEGORY } from '../lib/constants';
 
 const defaultProductRaw: { category: { S: string } } | null = {
   category: { S: DEFAULT_CATEGORY },
 };
 let productRaw: typeof defaultProductRaw | null = defaultProductRaw;
-jest.mock('../lambda/common/getProduct.ts', () => ({
+jest.mock('../lib/lambda/common/getProduct.ts', () => ({
   getProductRaw: jest.fn((_dbDocClient: DynamoDBDocumentClient, _productId: string) => productRaw),
 }));
 

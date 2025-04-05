@@ -1,6 +1,6 @@
 import { ScanCommand, DeleteCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { dbDocClient } from './client';
-import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../lib/constants';
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from '../../lib/constants';
 import { getProductsWithoutCount, products } from './data';
 
 async function clearTable(tableName: string) {

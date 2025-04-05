@@ -1,5 +1,5 @@
 import { Product, ProductWithoutId, ValidateResult } from '../../db/types';
-import { DEFAULT_CATEGORY } from '../../lib/constants';
+import { DEFAULT_CATEGORY } from '../../constants';
 
 export function validateProduct<T = Product | ProductWithoutId>(
   body: Partial<Product>,
