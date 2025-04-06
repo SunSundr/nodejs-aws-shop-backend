@@ -38,3 +38,4 @@ lerna-debug.log*
 !.elasticbeanstalk/*.global.yml
 
 .env
+src/configs/certs/global-bundle.pem

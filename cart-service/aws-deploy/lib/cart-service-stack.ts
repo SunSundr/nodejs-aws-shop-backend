@@ -1,6 +1,9 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as path from 'path';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import 'dotenv/config';
 
@@ -59,6 +62,70 @@ export class CartServiceStack extends cdk.Stack {
       securityGroups: [dbSecurityGroup],
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code,
     });
+
+    // -------------------------------------------------------------
+    const cartLambda = new NodejsFunction(this, 'NestLambda', {
+      functionName: 'NestLambdaFunction',
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'handler',
+      entry: path.join(__dirname, '../../nodejs-aws-cart-api/dist/lambda.js'),
+      depsLockFilePath: path.join(__dirname, '../../nodejs-aws-cart-api/package-lock.json'),
+      bundling: {
+        minify: true,
+        sourceMap: true,
+        externalModules: ['@aws-sdk/*', 'aws-sdk', 'class-transformer', 'class-validator'],
+        target: 'node20',
+        nodeModules: [
+          '@nestjs/core',
+          '@nestjs/common',
+          '@nestjs/platform-express',
+          'reflect-metadata',
+        ],
+        commandHooks: {
+          beforeInstall(): string[] {
+            return [];
+          },
+          beforeBundling(): string[] {
+            return [];
+          },
+          afterBundling(inputDir: string, outputDir: string): string[] {
+            const certsSrcPath = path.join(
+              inputDir,
+              'src',
+              'configs',
+              'certs',
+              'global-bundle.pem',
+            );
+            const certsDestPath = path.join(outputDir, 'configs', 'certs', 'global-bundle.pem');
+            const certsDestDir = path.join(outputDir, 'configs', 'certs');
+
+            return [`mkdir -p "${certsDestDir}"`, `cp "${certsSrcPath}" "${certsDestPath}"`];
+          },
+        },
+      },
+      environment: {
+        POSTGRES_HOST: 'cart-service-db.c3awusqkero2.eu-north-1.rds.amazonaws.com', //process.env.POSTGRES_HOST!,
+        POSTGRES_USER: process.env.POSTGRES_USER!,
+        POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD!,
+        POSTGRES_DB_NAME: process.env.POSTGRES_DB_NAME!,
+        POSTGRES_PORT: process.env.POSTGRES_PORT!,
+        RDS_INSTANCE_IDENTIFIER: process.env.RDS_INSTANCE_IDENTIFIER!,
+      },
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+    });
+
+    const { url } = cartLambda.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+      cors: {
+        allowedOrigins: ['*'],
+        allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.DELETE, lambda.HttpMethod.PUT],
+        allowedHeaders: ['*'],
+      },
+    });
+
+    new cdk.CfnOutput(this, 'NestUrl', { value: url, description: 'Nest endpoint' });
+    // -------------------------------------------------------------
 
     new cdk.CfnOutput(this, 'DbEndpoint', {
       value: database.instanceEndpoint.hostname,

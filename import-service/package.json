@@ -2,7 +2,7 @@
   "name": "import-service",
   "version": "0.1.0",
   "bin": {
-    "product-service": "dist/bin/import-service.js"
+    "import-service": "dist/bin/import-service.js"
   },
   "scripts": {
     "build": "rimraf dist && tsc",
