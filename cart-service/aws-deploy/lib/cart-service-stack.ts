@@ -5,11 +5,13 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
-import 'dotenv/config';
+import { getRequiredEnvVars } from './utils/getRequiredEnvVars';
 
 export class CartServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    const env = getRequiredEnvVars();
 
     const vpc = new ec2.Vpc(this, 'CartServiceVPC', {
       maxAzs: 2,
@@ -36,12 +38,12 @@ export class CartServiceStack extends cdk.Stack {
 
     dbSecurityGroup.addIngressRule(
       ec2.Peer.anyIpv4(), // This allows 0.0.0.0/0 (temporary)
-      ec2.Port.tcp(Number(process.env.POSTGRES_PORT) || 5432),
+      ec2.Port.tcp(Number(env.POSTGRES_PORT)),
       'Open PostgreSQL to internet (temporary)',
     );
 
     const database = new rds.DatabaseInstance(this, 'CartServiceDatabase', {
-      instanceIdentifier: process.env.RDS_INSTANCE_IDENTIFIER,
+      instanceIdentifier: env.RDS_INSTANCE_IDENTIFIER,
       engine: rds.DatabaseInstanceEngine.postgres({
         version: rds.PostgresEngineVersion.VER_15,
       }),
@@ -51,13 +53,13 @@ export class CartServiceStack extends cdk.Stack {
         subnetType: ec2.SubnetType.PUBLIC,
       },
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO), // Free tier eligible
-      databaseName: process.env.POSTGRES_DB_NAME || 'cartServiceDb',
+      databaseName: env.POSTGRES_DB_NAME,
       allocatedStorage: 20, // Maximum free tier storage
       maxAllocatedStorage: 20, // Removed autoscaling
       multiAz: false, // Single AZ for free tier
       credentials: rds.Credentials.fromPassword(
-        process.env.POSTGRES_USER || 'postgres',
-        cdk.SecretValue.unsafePlainText(process.env.POSTGRES_PASSWORD || 'test_password'),
+        env.POSTGRES_USER,
+        cdk.SecretValue.unsafePlainText(env.POSTGRES_PASSWORD),
       ),
       securityGroups: [dbSecurityGroup],
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code,
@@ -104,12 +106,12 @@ export class CartServiceStack extends cdk.Stack {
         },
       },
       environment: {
-        POSTGRES_HOST: 'cart-service-db.c3awusqkero2.eu-north-1.rds.amazonaws.com', //process.env.POSTGRES_HOST!,
-        POSTGRES_USER: process.env.POSTGRES_USER!,
-        POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD!,
-        POSTGRES_DB_NAME: process.env.POSTGRES_DB_NAME!,
-        POSTGRES_PORT: process.env.POSTGRES_PORT!,
-        RDS_INSTANCE_IDENTIFIER: process.env.RDS_INSTANCE_IDENTIFIER!,
+        POSTGRES_HOST: database.instanceEndpoint.hostname,
+        POSTGRES_USER: env.POSTGRES_USER,
+        POSTGRES_PASSWORD: env.POSTGRES_PASSWORD,
+        POSTGRES_DB_NAME: env.POSTGRES_DB_NAME,
+        POSTGRES_PORT: env.POSTGRES_PORT,
+        RDS_INSTANCE_IDENTIFIER: env.RDS_INSTANCE_IDENTIFIER,
       },
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
@@ -117,12 +119,15 @@ export class CartServiceStack extends cdk.Stack {
 
     const { url } = cartLambda.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
-      cors: {
-        allowedOrigins: ['*'],
-        allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.DELETE, lambda.HttpMethod.PUT],
-        allowedHeaders: ['*'],
-      },
+      // Possible duplicate headers (commented out):
+      // cors: {
+      //   allowedOrigins: ['*'],
+      //   allowedMethods: [lambda.HttpMethod.ALL],
+      //   allowedHeaders: ['*'],
+      // },
     });
+
+    cartLambda.node.addDependency(database);
 
     new cdk.CfnOutput(this, 'NestUrl', { value: url, description: 'Nest endpoint' });
     // -------------------------------------------------------------
