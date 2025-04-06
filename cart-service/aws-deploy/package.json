@@ -11,7 +11,7 @@
     "test:coverage": "jest --coverage",
     "cdk": "cdk",
     "cdk:bootstrap": "cdk bootstrap",
-    "cdk:deploy": "npm run build && cdk deploy --outputs-file dist/cdk-outputs.json && node dist/lib/sql/init-db.js",
+    "cdk:deploy": "npm run build && cdk deploy --outputs-file dist/cdk-outputs.json",
     "cdk:destroy": "cdk destroy",
     "cdk:diff": "npm run build && cdk diff",
     "cdk:synth": "npm run build && cdk synth",

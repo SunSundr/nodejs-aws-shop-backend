@@ -11,7 +11,7 @@ async function seedDatabase() {
     const sqlScript = fs.readFileSync(path.join(__dirname, 'seed.sql'), 'utf8');
     console.log('Executing SQL script...');
     await client.query(sqlScript);
-    console.log('Tables created successfully');
+    console.log('Tables seeded successfully');
   } catch (err) {
     console.error('Error:', err);
     throw err;
