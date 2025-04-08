@@ -28,6 +28,9 @@ BEGIN
     status cart_status NOT NULL DEFAULT 'OPEN'
   );
 
+  ALTER TABLE carts ADD CONSTRAINT carts_user_id_fkey 
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
   CREATE TABLE cart_items (
     cart_id UUID REFERENCES carts(id) ON DELETE CASCADE,
     product_id UUID NOT NULL,
@@ -47,4 +50,7 @@ BEGIN
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+
+  ALTER TABLE orders ADD CONSTRAINT orders_user_id_fkey 
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT;
 END $$;
