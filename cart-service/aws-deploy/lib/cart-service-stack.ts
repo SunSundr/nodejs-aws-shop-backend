@@ -6,6 +6,12 @@ import * as path from 'path';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import { getRequiredEnvVars } from './utils/getRequiredEnvVars';
+// const ALLOWED_ORIGINS = [
+//   'https://sunsundr.store', // Route 53
+//   'https://db5i175ksp8cp.cloudfront.net', // Cloudfront
+//   'http://localhost:4173', // vite prod server
+//   'http://localhost:5173', // vite dev server
+// ];
 
 export class CartServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -69,11 +75,12 @@ export class CartServiceStack extends cdk.Stack {
     const cartLambda = new NodejsFunction(this, 'NestLambda', {
       functionName: 'NestLambdaFunction',
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'handler',
+      //handler: 'handler',
+      handler: 'index.handler',
       entry: path.join(__dirname, '../../nodejs-aws-cart-api/dist/lambda.js'),
       depsLockFilePath: path.join(__dirname, '../../nodejs-aws-cart-api/package-lock.json'),
       bundling: {
-        minify: true,
+        minify: false,
         sourceMap: true,
         externalModules: ['@aws-sdk/*', 'aws-sdk', 'class-transformer', 'class-validator'],
         target: 'node20',
@@ -81,7 +88,11 @@ export class CartServiceStack extends cdk.Stack {
           '@nestjs/core',
           '@nestjs/common',
           '@nestjs/platform-express',
+          '@codegenie/serverless-express',
           'reflect-metadata',
+          'express',
+          //'class-transformer',
+          //'class-validator',
         ],
         commandHooks: {
           beforeInstall(): string[] {
@@ -120,17 +131,18 @@ export class CartServiceStack extends cdk.Stack {
     const { url } = cartLambda.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
       // Possible duplicate headers (commented out):
-      // cors: {
-      //   allowedOrigins: ['*'],
-      //   allowedMethods: [lambda.HttpMethod.ALL],
-      //   allowedHeaders: ['*'],
-      // },
+      cors: {
+        allowedOrigins: ['*'],
+        allowedMethods: [lambda.HttpMethod.ALL],
+        allowedHeaders: ['*'],
+        // maxAge: cdk.Duration.seconds(0),
+        // allowCredentials: true,
+      },
     });
 
     cartLambda.node.addDependency(database);
 
     new cdk.CfnOutput(this, 'NestUrl', { value: url, description: 'Nest endpoint' });
-    // -------------------------------------------------------------
 
     new cdk.CfnOutput(this, 'DbEndpoint', {
       value: database.instanceEndpoint.hostname,

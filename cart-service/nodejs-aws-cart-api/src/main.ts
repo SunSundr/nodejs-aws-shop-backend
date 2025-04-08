@@ -21,4 +21,7 @@ async function bootstrap() {
     console.log('App is running on %s port', port);
   });
 }
-bootstrap();
+
+if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  bootstrap();
+}

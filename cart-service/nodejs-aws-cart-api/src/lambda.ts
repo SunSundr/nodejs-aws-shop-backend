@@ -1,87 +1,66 @@
 import { NestFactory } from '@nestjs/core';
 import { configure } from '@codegenie/serverless-express';
-import { Callback, Context, Handler } from 'aws-lambda';
-import helmet from 'helmet';
+import { Context, Handler, Callback } from 'aws-lambda';
 import { AppModule } from './app.module';
-import { ALLOWED_ORIGINS, RESPONSE_ERROR_HEADERS } from './constants';
-// import cors from 'express';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import * as express from 'express';
 
-type LambdaFunctionUrlEvent = {
-  version: string;
-  rawPath: string;
-  rawQueryString: string;
-  headers: Record<string, string>;
-  requestContext: {
-    accountId: string;
-    apiId: string;
-    domainName: string;
-    domainPrefix: string;
-    http: {
-      method: string;
-      path: string;
-      protocol: string;
-      sourceIp: string;
-      userAgent: string;
-    };
-    requestId: string;
-    routeKey: string;
-    stage: string;
-    time: string;
-    timeEpoch: number;
-  };
-  body: string;
-  isBase64Encoded: boolean;
-};
-
-type ResponseHeaders = {
-  [header: string]: boolean | number | string;
-};
-
-let server: Handler;
+let cachedServer: Handler;
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const expressApp = express();
+  const adapter = new ExpressAdapter(expressApp);
 
-  // cors inside nest:
+  const app = await NestFactory.create(AppModule, adapter);
+
   // app.enableCors({
-  //  origin: (_req, callback) => callback(null, true),
+  //   origin: (_req, callback) => callback(null, true),
   // });
-
-  // for preflight:
-  //app.use(cors());
-
-  app.use(helmet());
 
   await app.init();
 
-  const expressApp = app.getHttpAdapter().getInstance();
-  return configure({ app: expressApp });
+  expressApp.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
+    next();
+  });
+
+  return configure({
+    app: expressApp,
+  });
 }
 
 export const handler = async (
-  event: LambdaFunctionUrlEvent,
+  event: any,
   context: Context,
   callback: Callback,
 ) => {
-  try {
-    if (!server) {
-      console.log('Starting the application...');
-      server = await bootstrap();
-    }
-    const response = await server(event, context, callback);
+  // console.log('Lambda handler started', { event, context });
 
-    return {
+  if (!cachedServer) {
+    // console.log('Bootstrapping application');
+    cachedServer = await bootstrap();
+    // console.log('Bootstrap complete');
+  }
+
+  try {
+    const response = await cachedServer(event, context, callback);
+    console.log('Response from server:', response);
+
+    const finalResponse = {
       ...response,
-      headers: {
-        ...getHeaders([event.requestContext?.http?.method], event.headers),
-        ...(response.headers || {}),
-      },
+      headers: {},
     };
+
+    console.log('Final response:', finalResponse);
+    return finalResponse;
   } catch (error) {
-    console.error('Error handling request:', error);
+    console.error('Error in handler:', error);
     return {
       statusCode: 500,
-      headers: RESPONSE_ERROR_HEADERS,
+      headers: {},
       body: JSON.stringify({
         message: 'Internal Server Error',
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -89,19 +68,3 @@ export const handler = async (
     };
   }
 };
-
-function getHeaders(
-  methods: string[] = [],
-  headers: ResponseHeaders | undefined,
-) {
-  const origin = headers ? headers['origin'] || headers['Origin'] : '*';
-  return {
-    'Access-Control-Allow-Origin':
-      origin && ALLOWED_ORIGINS.includes(String(origin)) ? origin : '',
-    'Access-Control-Allow-Methods': methods.length
-      ? methods.join(',')
-      : 'OPTIONS, GET, POST, PUT, DELETE',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json',
-  };
-}

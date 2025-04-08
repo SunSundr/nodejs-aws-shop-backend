@@ -23,6 +23,22 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { CartStatuses } from './models';
 import { Cart } from './entities/cart.entity';
 
+type CartItemFrontend = {
+  cartId: string;
+  count: number;
+  product: {
+    id: string;
+  };
+};
+
+function items2frontend(items: CartItem[]) {
+  return items.map((item) => ({
+    cartId: item.cartId,
+    count: item.count,
+    product: { id: item.productId },
+  }));
+}
+
 @Controller('api/profile/cart')
 export class CartController {
   constructor(
@@ -35,12 +51,14 @@ export class CartController {
   // @UseGuards(JwtAuthGuard)
   @UseGuards(BasicAuthGuard)
   @Get()
-  async findUserCart(@Req() req: AppRequest): Promise<CartItem[]> {
+  async findUserCart(
+    @Req() req: AppRequest,
+  ): Promise<CartItemFrontend[] | CartItem[]> {
     const cart = await this.cartService.findOrCreateByUserId(
       getUserIdFromRequest(req),
     );
-
-    return cart.items;
+    return items2frontend(cart.items);
+    // return cart.items;
   }
 
   // @UseGuards(JwtAuthGuard)
@@ -49,14 +67,15 @@ export class CartController {
   async updateUserCart(
     @Req() req: AppRequest,
     @Body() body: PutCartPayload,
-  ): Promise<CartItem[]> {
+  ): Promise<CartItemFrontend[] | CartItem[]> {
     // TODO: validate body payload...
     const cart = await this.cartService.updateByUserId(
       getUserIdFromRequest(req),
       body,
     );
 
-    return cart.items;
+    return items2frontend(cart.items);
+    // return cart.items;
   }
 
   // @UseGuards(JwtAuthGuard)
@@ -81,13 +100,13 @@ export class CartController {
 
       // Get opened cart for user to use transaction
       const cart = await queryRunner.manager.getRepository(Cart).findOne({
-        // where: {
-        //   userId: userId,
-        //   status: CartStatuses.OPEN,
-        // },
         where: { user: { id: userId }, status: CartStatuses.OPEN },
         relations: ['items'],
       });
+
+      if (!cart) {
+        throw new BadRequestException('Cart not found');
+      }
 
       // Get items for current cart
       const items = cart
@@ -98,9 +117,8 @@ export class CartController {
           })
         : [];
 
-      console.log('>>>> 1', cart, items);
-      if (!cart || !items.length) {
-        throw new BadRequestException('Cart is empty');
+      if (!items.length) {
+        throw new BadRequestException(`Cart is empty ${cart}`);
       }
 
       const order = await queryRunner.manager.getRepository(Order).save({
@@ -121,8 +139,6 @@ export class CartController {
         total: body.total,
         items: undefined,
       });
-
-      console.log('>>>> 3', order);
 
       // Update cart status to ORDERED
       await queryRunner.manager.getRepository(Cart).update(
@@ -146,40 +162,6 @@ export class CartController {
       await queryRunner.release();
     }
   }
-
-  // async checkout(@Req() req: AppRequest, @Body() body: CreateOrderDto) {
-  //   const userId = getUserIdFromRequest(req);
-  //   //return await this.dataSource.transaction(async () => {
-  //   console.log('>>>> 0', userId);
-  //   const cart = await this.cartService.findByUserId(userId);
-  //   console.log('>>>> 1', cart);
-
-  //   if (!(cart && cart.items.length)) {
-  //     throw new BadRequestException('Cart is empty');
-  //   }
-
-  //   const { id: cartId, items } = cart;
-
-  //   const order = await this.orderService.create({
-  //     userId,
-  //     cartId,
-  //     items: items.map(({ productId, count }) => ({
-  //       productId,
-  //       count,
-  //     })),
-  //     total: calculateCartTotal(body.items),
-  //     address: body.address,
-  //   });
-
-  //   console.log('>>>> 2', order);
-
-  //   await this.cartService.removeByUserId(userId);
-
-  //   console.log('>>>>3', order);
-
-  //   return { order };
-  //   //});
-  // }
 
   @UseGuards(BasicAuthGuard)
   @Get('order')

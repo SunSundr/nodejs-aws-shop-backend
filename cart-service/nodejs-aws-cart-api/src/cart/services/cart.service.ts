@@ -17,8 +17,7 @@ export class CartService {
 
   async findByUserId(userId: string): Promise<Cart | undefined> {
     return this.cartRepository.findOne({
-      //where: { userId },
-      where: { user: { id: userId } },
+      where: { user: { id: userId }, status: CartStatuses.OPEN },
       relations: ['items'],
     });
   }
@@ -33,14 +32,13 @@ export class CartService {
 
   async findOrCreateByUserId(userId: string): Promise<Cart> {
     let cart = await this.findByUserId(userId);
-    if (!cart) {
+    if (!cart || cart.status !== 'OPEN') {
       cart = await this.createByUserId(userId);
     }
     return cart;
   }
 
   async updateByUserId(userId: string, payload: PutCartPayload): Promise<Cart> {
-    console.log('updateByUserId', payload);
     const cart = await this.findOrCreateByUserId(userId);
     const itemIndex = cart.items.findIndex(
       (item) => item.productId === payload.product.id,
