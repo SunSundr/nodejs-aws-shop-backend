@@ -10,7 +10,7 @@ The repository is organized as follows:
 ├── product-service/       # Under Development
 ├── import-service/        # Under Development
 ├── authorization-service/ # Under Development
-├── cart-service/          # Not yet implemented / Planned
+├── cart-service/          # Under Development
 └── README.md              # This main README file
 ```
 
