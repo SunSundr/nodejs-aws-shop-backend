@@ -1,13 +1,17 @@
-node_modules/
-dist/
-dockerfile
-.dockerignore
-.env
-*.log
-.vscode/
-README.md
-test/
-coverage/
-.git
-.gitignore
+src/configs/certs
 src/lambda.ts
+*.spec.ts
+
+# node_modules/
+# dist/
+# dockerfile
+# .dockerignore
+# .env
+# *.log
+# .vscode/
+# README.md
+# test/
+# coverage/
+# .git
+# .gitignore
+# src/lambda.ts

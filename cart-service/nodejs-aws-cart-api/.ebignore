@@ -1,0 +1,12 @@
+*
+
+!Dockerfile
+!.platform/
+!.ebextensions/
+!package*.json
+!build-optimized.cjs
+!package.init.cjs
+!tsconfig*.json
+!src/
+
+src/configs/certs/
