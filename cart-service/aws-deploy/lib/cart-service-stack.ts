@@ -213,7 +213,7 @@ export class CartServiceStack extends cdk.Stack {
         protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
         originSslProtocols: [cloudfront.OriginSslPolicy.TLS_V1_2],
         customHeaders: {
-          'X-Forwarded-Host': 'd1wr58fh208zzd.cloudfront.net',
+          'X-Forwarded-Host': distribution.distributionDomainName,
           'X-Origin-Verify': 'cloudfront',
         },
       }),
