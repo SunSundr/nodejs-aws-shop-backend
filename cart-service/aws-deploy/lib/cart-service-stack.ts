@@ -165,7 +165,7 @@ export class CartServiceStack extends cdk.Stack {
       responseHeadersPolicyName: 'CORSHeaders',
       corsBehavior: {
         accessControlAllowOrigins: ALLOWED_ORIGINS,
-        accessControlAllowMethods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
+        accessControlAllowMethods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         accessControlAllowHeaders: [
           'Content-Type',
           'Authorization',
@@ -177,6 +177,34 @@ export class CartServiceStack extends cdk.Stack {
         accessControlMaxAge: cdk.Duration.seconds(600),
         originOverride: true,
       },
+      securityHeadersBehavior: {
+        contentSecurityPolicy: {
+          override: true,
+          contentSecurityPolicy: "default-src 'self'",
+        },
+        contentTypeOptions: {
+          override: true,
+        },
+        frameOptions: {
+          frameOption: cloudfront.HeadersFrameOption.DENY,
+          override: true,
+        },
+        strictTransportSecurity: {
+          override: true,
+          accessControlMaxAge: cdk.Duration.seconds(63072000),
+          includeSubdomains: true,
+          preload: true,
+        },
+      },
+      customHeadersBehavior: {
+        customHeaders: [
+          {
+            header: 'X-Custom-Header',
+            value: 'Custom Value',
+            override: true,
+          },
+        ],
+      },
     });
 
     distribution.addBehavior(
@@ -184,9 +212,17 @@ export class CartServiceStack extends cdk.Stack {
       new origins.HttpOrigin(process.env.CART_API_EB_URL as string, {
         protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
         originSslProtocols: [cloudfront.OriginSslPolicy.TLS_V1_2],
+        customHeaders: {
+          'X-Forwarded-Host': 'd1wr58fh208zzd.cloudfront.net',
+          'X-Origin-Verify': 'cloudfront',
+        },
       }),
       {
         responseHeadersPolicy,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+        cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
+        originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER,
+        cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
       },
     );
 
