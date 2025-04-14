@@ -1,17 +1,11 @@
-src/configs/certs
-src/lambda.ts
-*.spec.ts
+# Since the Dockerfile doesn't use full copying of the entire project,
+# there's no need to add many folders for exclusion in this file.
 
-# node_modules/
-# dist/
-# dockerfile
-# .dockerignore
-# .env
-# *.log
-# .vscode/
-# README.md
-# test/
-# coverage/
-# .git
-# .gitignore
-# src/lambda.ts
+# Exclude the folder with certificates
+src/configs/certs
+
+# Exclude the temporary lambda file not used during application build
+src/lambda.ts
+
+# Exclude test files
+*.spec.ts

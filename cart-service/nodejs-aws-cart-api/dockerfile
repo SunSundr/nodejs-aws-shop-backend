@@ -1,14 +1,8 @@
 ARG ALPINE_VERSION=3.21
 
 FROM node:22.14-alpine${ALPINE_VERSION} AS builder
-# FROM node:18-alpine AS builder
-# FROM docker.io/library/node:18-alpine AS builder
+
 WORKDIR /app
-
-# COPY package*.json package.init.cjs tsconfig.json tsconfig.build.json .cleanmodules ./
-# COPY src ./src
-
-# RUN node package.init.cjs && npm ci --omit=dev && npm run build
 
 COPY package*.json package.init.cjs build-optimized.cjs tsconfig.json tsconfig.build.json ./
 RUN node package.init.cjs && npm ci
@@ -19,18 +13,11 @@ RUN mkdir -p /etc/pki/rds && \
     wget -O /etc/pki/rds/global-bundle.pem \
     https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 
- # && npx clean-modules --directory /app/node_modules --glob-file /app/.cleanmodules --yes --no-defaults
 
-
-# FROM gcr.io/distroless/nodejs18-debian11
 FROM node:22.14-alpine${ALPINE_VERSION}
-# FROM node:18-alpine
-# FROM docker.io/library/node:18-alpine
 
 WORKDIR /app
 
-# COPY package*.json ./
-# RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /etc/pki/rds /etc/pki/rds
 
@@ -38,23 +25,8 @@ RUN rm -rf /var/cache/apk/* && \
     find /usr/lib -name "*.a" -delete && \
     rm -rf /usr/share/man
 
-# RUN npm ci --omit=dev
-# RUN rm -rf /var/cache/apk/* /tmp/*
-# RUN find /app/node_modules -type d \( -name "test" -o -name "docs" \) -exec rm -rf {} +
-
-
-
-
-# COPY --from=builder /app/node_modules ./node_modules
-# COPY --from=builder /app/dist ./dist
-
-# RUN rm -rf /var/cache/apk/* /tmp/*
-
-# RUN find /app/node_modules -type d \( -name "test" -o -name "docs" -o -name "examples" \) -exec rm -rf {} + && \
-#     rm -rf /app/node_modules/.cache
-
 ENV NODE_ENV=production \
-  APP_PORT=4000
+  APP_PORT=8081
 
-EXPOSE 4000
+EXPOSE 8081
 CMD ["node", "dist/main.js"]
