@@ -4,9 +4,9 @@ FROM node:22.14-alpine${ALPINE_VERSION} AS builder
 
 WORKDIR /app
 
-COPY package*.json package.init.cjs build-optimized.cjs tsconfig.json tsconfig.build.json ./
+COPY package*.json package.init.cjs build-optimized.cjs ./
 RUN node package.init.cjs && npm ci
-COPY src ./src
+COPY dist ./dist
 RUN node build-optimized.cjs
 
 RUN mkdir -p /etc/pki/rds && \
@@ -29,4 +29,4 @@ ENV NODE_ENV=production \
   APP_PORT=8081
 
 EXPOSE 8081
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/index.js"]

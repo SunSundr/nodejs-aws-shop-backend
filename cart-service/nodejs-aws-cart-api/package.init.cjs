@@ -11,6 +11,10 @@ const devDependenciesToRemove = [
   /^@codegenie\//,
   /aws-lambda/,
   /dotenv/,
+  /supertest/,
+  /ts-jest/,
+  /tsconfig-paths/,
+  /typescript/,
 ];
 
 if (packageJson.devDependencies) {
