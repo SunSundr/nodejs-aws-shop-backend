@@ -45,6 +45,7 @@ RUN rm -rf /var/cache/apk/* && \
 ENV NODE_ENV=production \
   APP_PORT=8081
 
+
 # Expose application port
 EXPOSE 8081
 # Startup command
