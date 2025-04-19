@@ -6,9 +6,11 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build": "node build-optimized.cjs",
+    "build:nest": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
+    "start": "node dist/index.js",
+    "start:nest": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
@@ -20,9 +22,12 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nestjs/cache-manager": "^3.0.1",
     "@nestjs/common": "^11.0.20",
     "@nestjs/core": "^11.0.20",
     "@nestjs/platform-express": "^11.0.20",
+    "axios": "^1.8.4",
+    "cache-manager": "^6.4.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
@@ -36,6 +41,7 @@
     "@types/jest": "^29.5.14",
     "@types/node": "^22.14.1",
     "@types/supertest": "^6.0.3",
+    "esbuild": "^0.25.2",
     "eslint": "^9.25.0",
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-prettier": "^5.2.6",
@@ -50,6 +56,9 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.30.1"
+  },
+  "engines": {
+    "node": "18.x"
   },
   "jest": {
     "moduleFileExtensions": [
