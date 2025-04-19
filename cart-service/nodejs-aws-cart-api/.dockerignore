@@ -1,0 +1,9 @@
+# Since the Dockerfile doesn't use full copying of the entire project,
+# there's no need to add many folders for exclusion in this file.
+
+# Exclude the temporary lambda file not used during application build
+dist/lambda.*
+
+# Exclude declaration files and source maps from the dist folder
+dist/**/*.d.ts
+dist/**/*.js.map

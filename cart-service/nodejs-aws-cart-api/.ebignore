@@ -1,0 +1,9 @@
+*
+
+!Dockerfile
+!.platform/
+!.ebextensions/
+!package*.json
+!build-optimized.cjs
+!package.init.cjs
+!dist/

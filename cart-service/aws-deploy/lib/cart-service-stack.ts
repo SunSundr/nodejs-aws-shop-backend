@@ -3,15 +3,18 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import { getRequiredEnvVars } from './utils/getRequiredEnvVars';
-// const ALLOWED_ORIGINS = [
-//   'https://sunsundr.store', // Route 53
-//   'https://db5i175ksp8cp.cloudfront.net', // Cloudfront
-//   'http://localhost:4173', // vite prod server
-//   'http://localhost:5173', // vite dev server
-// ];
+
+const ALLOWED_ORIGINS = [
+  'https://sunsundr.store', // Route 53
+  'https://db5i175ksp8cp.cloudfront.net', // Cloudfront
+  'http://localhost:4173', // vite prod server
+  'http://localhost:5173', // vite dev server
+];
 
 export class CartServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -141,6 +144,92 @@ export class CartServiceStack extends cdk.Stack {
     });
 
     cartLambda.node.addDependency(database);
+
+    // Create CloudFront distribution
+    const distribution = new cloudfront.Distribution(this, 'CartServiceDistribution', {
+      defaultBehavior: {
+        origin: new origins.HttpOrigin(process.env.CART_API_EB_URL as string, {
+          protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+          originSslProtocols: [cloudfront.OriginSslPolicy.TLS_V1_2],
+        }),
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+        originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER,
+      },
+      enableIpv6: true,
+      httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
+    });
+
+    const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'NestCORSHeaders', {
+      responseHeadersPolicyName: 'CORSHeaders',
+      corsBehavior: {
+        accessControlAllowOrigins: ALLOWED_ORIGINS,
+        accessControlAllowMethods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        accessControlAllowHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Amz-Date',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+        ],
+        accessControlAllowCredentials: true,
+        accessControlMaxAge: cdk.Duration.seconds(600),
+        originOverride: true,
+      },
+      securityHeadersBehavior: {
+        contentSecurityPolicy: {
+          override: true,
+          contentSecurityPolicy: "default-src 'self'",
+        },
+        contentTypeOptions: {
+          override: true,
+        },
+        frameOptions: {
+          frameOption: cloudfront.HeadersFrameOption.DENY,
+          override: true,
+        },
+        strictTransportSecurity: {
+          override: true,
+          accessControlMaxAge: cdk.Duration.seconds(63072000),
+          includeSubdomains: true,
+          preload: true,
+        },
+      },
+      customHeadersBehavior: {
+        customHeaders: [
+          {
+            header: 'X-Custom-Header',
+            value: 'Custom Value',
+            override: true,
+          },
+        ],
+      },
+    });
+
+    distribution.addBehavior(
+      '/*',
+      new origins.HttpOrigin(process.env.CART_API_EB_URL as string, {
+        protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+        originSslProtocols: [cloudfront.OriginSslPolicy.TLS_V1_2],
+        customHeaders: {
+          'X-Forwarded-Host': distribution.distributionDomainName,
+          'X-Origin-Verify': 'cloudfront',
+        },
+      }),
+      {
+        responseHeadersPolicy,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+        cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
+        originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER,
+        cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+      },
+    );
+
+    new cdk.CfnOutput(this, 'CloudFrontURL', {
+      value: `https://${distribution.distributionDomainName}`,
+      description: 'CloudFront Distribution URL',
+    });
 
     new cdk.CfnOutput(this, 'NestUrl', { value: url, description: 'Nest endpoint' });
 
