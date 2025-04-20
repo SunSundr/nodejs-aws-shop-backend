@@ -1,8 +1,9 @@
 import { Injectable, HttpException, Inject } from '@nestjs/common';
 import axios, { AxiosError, AxiosResponse } from 'axios';
-import { AppRequest, HttpMethods, ValidURLs } from './types';
+import { AppRequest, CacheObject, HttpMethods, ValidURLs } from './types';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import { Response } from 'express';
 
 @Injectable()
 export class AppService {
@@ -19,7 +20,11 @@ export class AppService {
     return serviceUrls[serviceName];
   }
 
-  private async proxyRequest(req: AppRequest): Promise<AxiosResponse['data']> {
+  private async proxyRequest(
+    req: AppRequest,
+    res: Response,
+    savePath?: string,
+  ): Promise<AxiosResponse['data']> {
     const { path, method, headers, query, body } = req;
     try {
       const newHeaders = { ...headers };
@@ -33,6 +38,15 @@ export class AppService {
         params: query,
         data: method === HttpMethods.GET ? null : body,
       });
+      if (savePath) {
+        await this.cacheManager.set<CacheObject>(savePath, {
+          status: response.status,
+          headers: response.headers,
+          body: response.data as unknown,
+        });
+      }
+      res.header(response.headers);
+      res.status(response.status);
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError;
@@ -49,7 +63,7 @@ export class AppService {
     }
   }
 
-  async handleRequest(req: AppRequest): Promise<AxiosResponse['data']> {
+  async handleRequest(req: AppRequest, res: Response): Promise<AxiosResponse['data']> {
     try {
       const pathSegments = req.path.split('/').filter((seg) => seg.length > 0);
 
@@ -60,7 +74,7 @@ export class AppService {
       const serviceName = pathSegments[0] as ValidURLs;
       const recipientUrl = this.getServiceURL(serviceName);
 
-      if (!recipientUrl) throw new HttpException('Unknown service name', 502);
+      if (!recipientUrl) throw new HttpException('Cannot process request', 502);
 
       const remainingPath = pathSegments.slice(1).join('/');
       const updRequest = {
@@ -70,16 +84,23 @@ export class AppService {
       };
 
       if (serviceName === ValidURLs.PRODUCTS && req.method === HttpMethods.GET) {
-        const cachedData = await this.cacheManager.get(req.path);
+        const cachedData = await this.cacheManager.get<CacheObject>(req.path);
         if (cachedData) {
           console.log('Cache Manager: use cache');
-          return cachedData;
+          res.status(cachedData.status);
+          res.header(cachedData.headers);
+          return cachedData.body;
         }
-        const response: unknown = await this.proxyRequest(updRequest);
-        await this.cacheManager.set(req.path, response);
+        const response: unknown = await this.proxyRequest(updRequest, res, req.path);
         return response;
       } else {
-        return await this.proxyRequest(updRequest);
+        if (
+          serviceName === ValidURLs.PRODUCTS &&
+          (req.method === HttpMethods.DELETE || req.method === HttpMethods.PUT)
+        ) {
+          await this.cacheManager.clear();
+        }
+        return await this.proxyRequest(updRequest, res);
       }
     } catch (error) {
       if (error instanceof HttpException) throw error;

@@ -1,3 +1,5 @@
+import { RawAxiosResponseHeaders } from 'axios';
+
 export enum ValidURLs {
   PRODUCTS = 'products',
   CART = 'cart',
@@ -32,4 +34,10 @@ export interface AppRequest {
   headers: Headers;
   query: Query;
   body: unknown;
+}
+
+export interface CacheObject {
+  status: number;
+  headers: RawAxiosResponseHeaders | Headers;
+  body: any;
 }

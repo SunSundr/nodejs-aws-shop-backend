@@ -1,14 +1,21 @@
 import { Module } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { CacheModule } from '@nestjs/cache-manager';
+import {
+  BATCH_DELAY_MS,
+  customKeyv,
+  deserializeHttpResponse,
+  serializeHttpResponse,
+} from './storage';
 
 @Module({
   imports: [
     CacheModule.register({
-      store: 'memory',
-      max: 100,
-      ttl: 120000, // 2 minutes
+      stores: [customKeyv],
+      ttl: BATCH_DELAY_MS,
+      serialize: serializeHttpResponse,
+      deserialize: deserializeHttpResponse,
     }),
   ],
   controllers: [AppController],
