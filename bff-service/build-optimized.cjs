@@ -2,7 +2,7 @@ const { build } = require('esbuild');
 const { join } = require('path');
 
 build({
-  entryPoints: [join(__dirname, 'dist/main.js')],
+  entryPoints: [join(__dirname, 'dist/src/main.js')],
   bundle: true,
   platform: 'node',
   target: 'node18',

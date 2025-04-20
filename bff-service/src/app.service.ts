@@ -12,6 +12,8 @@ export class AppService {
     const serviceUrls: { [key: string]: string } = {
       products: process.env.URL_PRODUCTS || '',
       cart: process.env.URL_CART || '',
+      login: process.env.URL_LOGIN || '',
+      register: process.env.URL_REGISTER || '',
     };
 
     return serviceUrls[serviceName];
@@ -24,14 +26,12 @@ export class AppService {
       delete newHeaders.host;
       delete newHeaders.connection;
       delete newHeaders['content-length'];
-
       const response = await axios({
         url: path,
         method,
         headers: newHeaders,
         params: query,
         data: method === HttpMethods.GET ? null : body,
-        // validateStatus: null,
       });
       return response.data;
     } catch (error) {
@@ -65,6 +65,7 @@ export class AppService {
       const remainingPath = pathSegments.slice(1).join('/');
       const updRequest = {
         ...req,
+        headers: { ...req.headers },
         path: remainingPath ? `${recipientUrl}/${remainingPath}` : recipientUrl,
       };
 

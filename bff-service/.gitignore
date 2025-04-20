@@ -5,3 +5,4 @@
 !.elasticbeanstalk/*.global.yml
 eb_create.log
 .env
+dist/

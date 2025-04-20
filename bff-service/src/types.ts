@@ -1,6 +1,8 @@
 export enum ValidURLs {
   PRODUCTS = 'products',
   CART = 'cart',
+  LOGIN = 'login',
+  REGISTER = 'register',
 }
 
 export enum HttpMethods {

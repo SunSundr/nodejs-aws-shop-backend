@@ -10,6 +10,7 @@
 !build-optimized.cjs
 
 # Ignore unnecessary files
+dist/aws-bff/
 .DS_Store
 .git
 .gitignore
