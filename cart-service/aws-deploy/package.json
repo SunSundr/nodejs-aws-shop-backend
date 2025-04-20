@@ -2,7 +2,7 @@
   "name": "cart-service",
   "version": "0.1.0",
   "bin": {
-    "cart-service": "bin/cart-service.js"
+    "cart-service": "dist/bin/cart-service.js"
   },
   "scripts": {
     "build": "rimraf dist && tsc && cp lib/sql/*.sql dist/lib/sql",
