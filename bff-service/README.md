@@ -1,98 +1,114 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+# BFF Service
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+The BFF (Backend for Frontend) service acts as a gateway for interacting with multiple backend services, such as the Cart Service and Product Service. It provides a unified API for the frontend, simplifying data aggregation and reducing the complexity of direct communication with individual backend systems. This service is implemented as a NestJS application. The application is built for deployment using esbuild, with build configurations defined in `build-optimized.cjs`.
 
-## Project setup
+## Features
 
-```bash
-$ npm install
+-   **Unified API:** Provides a single entry point for frontend applications to access backend data.
+-   **Proxying:** Proxies requests to the Cart and Product services.
+-   **Caching:** Caches responses to improve performance and reduce latency.
+-   **Built with NestJS:** Leverages the power and structure of the NestJS framework.
+-   **Optimized Build:** Uses esbuild for fast and efficient builds, configured via `build-optimized.cjs`.
+
+## Getting Started
+
+### Prerequisites
+
+Ensure you have the following installed:
+
+-   [Node.js](https://nodejs.org/) (latest stable version recommended)
+-   [AWS CLI](https://aws.amazon.com/cli/) configured with appropriate credentials
+-   [AWS CDK](https://aws.amazon.com/cdk/) installed globally
+-   [EB CLI](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3.html) installed globally
+
+### Installation
+
+1.  Navigate to the BFF Service directory:
+
+    ```sh
+    cd bff-service
+    ```
+
+2.  Install dependencies:
+
+    ```sh
+    npm ci
+    ```
+
+### Environment Configuration
+
+Create a `.env` file in the root of the `bff-service` directory with the following variables:
+
+```env
+PORT=3000
+URL_CART=http://localhost:4000                         # Cart Service URL
+URL_PRODUCTS=http://localhost:5000                     # Product Service URL
+URL_LOGIN=http://localhost:4000/api/auth/login         # Cart Service URL (temporary login)
+URL_REGISTER=http://localhost:4000/api/auth/register   # Cart Service URL (temporary register)
 ```
 
-## Compile and run the project
+### Running the Application Locally
 
-```bash
-# development
-$ npm run start
+The following npm scripts are available for running the application:
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
+-   `npm run build`: Builds the application using `build-optimized.cjs` and esbuild.
+-   `npm run build:nest`: Builds the application using NestJS CLI.
+-   `npm run start`: Starts the application from the compiled output.
+-   `npm run start:nest`: Starts the application using NestJS CLI.
+-   `npm run start:dev`: Starts the application in development mode with hot-reloading.
+-   `npm run start:debug`: Starts the application in debug mode with hot-reloading.
+-   `npm run start:prod`: Starts the application in production mode.
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Deployment to AWS Elastic Beanstalk is facilitated by the `bff-service/run-deploy.sh` script. This script automates the process of initializing and creating an Elastic Beanstalk environment.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+**Here's a breakdown of the script's functionality:**
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+1.  **Environment Variable Check:**  The script first checks if the `GITHUB_LOGIN` environment variable is set. This variable is assumed to be your GitHub username, used for naming the Elastic Beanstalk environment.
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+2.  **Environment Variable Aggregation:**  It then reads all environment variables from the `.env` file (excluding comments) and formats them into a comma-separated string for use with the Elastic Beanstalk `eb create` command.
 
-## Resources
+3.  **Environment Name Prompt:**  The script prompts the user to enter an environment name (e.g., "develop", "test", or "prod"). The environment name must be at least four characters long.
 
-Check out a few resources that may come in handy when working with NestJS:
+4.  **Elastic Beanstalk Initialization:**  The script initializes the Elastic Beanstalk environment using `eb init`. This command sets up the necessary configuration files for Elastic Beanstalk. It also specifies the Node.js platform and the AWS region (eu-north-1).
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+5.  **Elastic Beanstalk Environment Creation:**  Finally, the script creates the Elastic Beanstalk environment using `eb create`. This command provisions the AWS resources required to run the application.  The command includes:
 
-## Support
+    -   A custom CNAME based on the `GITHUB_LOGIN` and the chosen environment name.
+    -   The `--single` option, which creates a single-instance environment.
+    -   The AWS region.
+    -   The Node.js platform (Node.js 18 running on 64bit Amazon Linux 2023).
+    -   The environment variables extracted from the `.env` file.
+    -   Verbose output and logging to a file named `eb_create.log`.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+**To deploy the application:**
 
-## Stay in touch
+1.  Ensure you have properly configured your `.env` file
+2.  Make sure you have the `GITHUB_LOGIN` environment variable set.
+3.  Run the `bff-service/run-deploy.sh` script.  You will be prompted to enter the environment name.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### AWS Configuration
 
-## License
+The `bff-service/aws-bff` directory contains AWS CDK code for configuring additional AWS resources, such as a CloudFront distribution for the Elastic Beanstalk domain. This directory represents a separate AWS CDK project and requires its own dependencies to be installed.  Navigate to this directory (`cd bff-service/aws-bff`) and run `npm ci` or `npm install` to install the necessary packages before using the CDK commands.
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+The following npm scripts are available for managing the AWS CDK stack:
+
+-   `npm run cdk:deploy`: Builds the application and deploys the CDK stack.
+-   `npm run cdk:destroy`: Destroys the CDK stack.
+-   `npm run cdk:diff`: Builds the application and shows the difference between the current CDK stack and the deployed stack.
+-   `npm run cdk:synth`: Builds the application and synthesizes the CDK stack.
+
+## API Documentation
+
+### Available Endpoints
+
+#### /products
+
+All endpoints provided by the `product-service` are proxied through this endpoint.
+
+#### /cart
+
+All endpoints provided by the `cart-service` are proxied through this endpoint.
