@@ -1,23 +1,32 @@
 import { Injectable, HttpException, Inject } from '@nestjs/common';
 import axios, { AxiosError, AxiosResponse } from 'axios';
-import { AppRequest, CacheObject, HttpMethods, ValidURLs } from './types';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { Response } from 'express';
+import { getServiceURL } from './utils/serviceUrls';
+import { AppRequest, CacheObject, HttpMethods, ValidURLs } from './types';
 
 @Injectable()
 export class AppService {
   constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
 
-  private getServiceURL(serviceName: string): string | undefined {
-    const serviceUrls: { [key: string]: string } = {
-      products: process.env.URL_PRODUCTS || '',
-      cart: process.env.URL_CART || '',
-      login: process.env.URL_LOGIN || '',
-      register: process.env.URL_REGISTER || '',
-    };
+  private sanitizeHeaders(headers: Record<string, string>) {
+    const { host, connection, 'content-length': _, ...cleanedHeaders } = headers;
+    return cleanedHeaders;
+  }
 
-    return serviceUrls[serviceName];
+  private isClearCache(serviceName: string, method: HttpMethods): boolean {
+    return (
+      serviceName === ValidURLs.PRODUCTS &&
+      (method === HttpMethods.DELETE || method === HttpMethods.PUT)
+    );
+  }
+
+  private handleError(error: unknown): never {
+    if (error instanceof HttpException) throw error;
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Proxy error:', message);
+    throw new HttpException(`Internal server error: ${message}`, 500);
   }
 
   private async proxyRequest(
@@ -27,11 +36,8 @@ export class AppService {
   ): Promise<AxiosResponse['data']> {
     const { path, method, headers, query, body } = req;
     try {
-      const newHeaders = { ...headers };
-      delete newHeaders.host;
-      delete newHeaders.connection;
-      delete newHeaders['content-length'];
-      const response = await axios({
+      const newHeaders = this.sanitizeHeaders(headers);
+      const response = await axios.request({
         url: path,
         method,
         headers: newHeaders,
@@ -47,6 +53,7 @@ export class AppService {
       }
       res.header(response.headers);
       res.status(response.status);
+
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError;
@@ -56,27 +63,21 @@ export class AppService {
           axiosError.response.status || 502,
         );
       }
-      throw new HttpException(
-        `Error proxyRequest: ${error instanceof Error ? error.message : error}`,
-        502,
-      );
+      this.handleError(error);
     }
   }
 
   async handleRequest(req: AppRequest, res: Response): Promise<AxiosResponse['data']> {
     try {
-      const pathSegments = req.path.split('/').filter((seg) => seg.length > 0);
+      const [serviceName, ...rest] = req.path.split('/').filter(Boolean);
 
-      if (pathSegments.length === 0) {
-        throw new HttpException('Bad request: unknown redirect path', 400);
-      }
+      if (!serviceName) throw new HttpException('Bad request', 400);
 
-      const serviceName = pathSegments[0] as ValidURLs;
-      const recipientUrl = this.getServiceURL(serviceName);
+      const recipientUrl = getServiceURL(serviceName as ValidURLs);
 
       if (!recipientUrl) throw new HttpException('Cannot process request', 502);
 
-      const remainingPath = pathSegments.slice(1).join('/');
+      const remainingPath = rest.join('/');
       const updRequest = {
         ...req,
         headers: { ...req.headers },
@@ -86,28 +87,19 @@ export class AppService {
       if (serviceName === ValidURLs.PRODUCTS && req.method === HttpMethods.GET) {
         const cachedData = await this.cacheManager.get<CacheObject>(req.path);
         if (cachedData) {
-          console.log('Cache Manager: use cache');
           res.status(cachedData.status);
           res.header(cachedData.headers);
           return cachedData.body;
         }
-        const response: unknown = await this.proxyRequest(updRequest, res, req.path);
-        return response;
+
+        return await this.proxyRequest(updRequest, res, req.path);
       } else {
-        if (
-          serviceName === ValidURLs.PRODUCTS &&
-          (req.method === HttpMethods.DELETE || req.method === HttpMethods.PUT)
-        ) {
-          await this.cacheManager.clear();
-        }
+        if (this.isClearCache(serviceName, req.method)) await this.cacheManager.clear();
+
         return await this.proxyRequest(updRequest, res);
       }
     } catch (error) {
-      if (error instanceof HttpException) throw error;
-      throw new HttpException(
-        `Internal server error: ${error instanceof Error ? error.message : error}`,
-        500,
-      );
+      this.handleError(error);
     }
   }
 }

@@ -17,13 +17,6 @@ export enum HttpMethods {
   HEAD = 'HEAD',
 }
 
-export interface Headers {
-  [key: string]: string | string[] | undefined;
-  host?: string;
-  connection?: string;
-  'content-length'?: string;
-}
-
 export interface Query {
   [key: string]: string | string[] | undefined;
 }
@@ -31,7 +24,7 @@ export interface Query {
 export interface AppRequest {
   path: string;
   method: HttpMethods;
-  headers: Headers;
+  headers: Record<string, string>;
   query: Query;
   body: unknown;
 }

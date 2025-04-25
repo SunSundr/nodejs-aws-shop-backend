@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import { join } from 'path';
 import Keyv from 'keyv';
 import { KeyvFile } from 'keyv-file';
-import { CacheObject } from './types';
+import { CacheObject } from '../types';
 
 export const BATCH_DELAY_MS = 120000;
 

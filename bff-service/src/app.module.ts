@@ -7,7 +7,7 @@ import {
   customKeyv,
   deserializeHttpResponse,
   serializeHttpResponse,
-} from './storage';
+} from './utils/storage';
 
 @Module({
   imports: [
