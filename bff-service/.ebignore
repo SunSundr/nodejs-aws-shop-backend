@@ -1,0 +1,20 @@
+# Ignore everything
+*
+
+# Allow only necessary files
+!package.json
+!package-lock.json
+!.ebextensions/
+!Procfile
+!dist/
+!build-optimized.cjs
+
+# Ignore unnecessary files
+dist/aws-bff/
+.DS_Store
+.git
+.gitignore
+.env
+node_modules/
+src/
+test/
